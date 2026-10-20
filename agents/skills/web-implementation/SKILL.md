@@ -110,7 +110,8 @@ everywhere.
   arithmetic; any other rounding is the engine's own rule for that value, cited in a comment.
 - Values stay within `Number.MAX_SAFE_INTEGER`; one that could exceed it is a `bigint`.
 - Display formatting goes through `src/lib/format.ts`, which formats without the visitor's locale,
-  so the server and the browser render the same text. Floats are for layout and animation only.
+  so the server and the browser render the same text. Floats are for layout, animation, and the
+  seeded generator's draws, never for a value that mirrors engine state.
 
 ## React
 
@@ -155,7 +156,9 @@ in a test file: a test cannot reset it, and a second instance of a component can
 ## Next.js App Router
 
 - The site is statically rendered: every route prerenders at build time, and `next build` marks it
-  `○ (Static)`. Never use a request-time API — `cookies()`, `headers()`, `connection()`,
+  `○ (Static)`, or `● (SSG)` for a dynamic segment whose `generateStaticParams` lists every path
+  and whose `dynamicParams = false` stops any other from rendering on demand. Never use a
+  request-time API — `cookies()`, `headers()`, `connection()`,
   `draftMode()`, a page's `searchParams` — an uncached `fetch`, or a `dynamic` export. Read the
   route table after every change under `src/app/`.
 - Keep the default build output, never `output: "export"`: a static export drops the `headers()`
@@ -163,7 +166,7 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - No backend: no route handler (`route.ts`), server action (`"use server"`), `proxy.ts`, or runtime
   data fetching without the owner's approval. Metadata routes (`robots.ts`, `sitemap.ts`,
   `manifest.ts`, image routes) are special route handlers that Next.js prerenders; they are fine
-  while the build marks them `○ (Static)`.
+  while the build marks them prerendered.
 - Route files follow the App Router file conventions in `src/app/`: `layout.tsx`, `page.tsx`, and
   the metadata files (`icon.svg`, `apple-icon.png`, `opengraph-image.png` and `twitter-image.png`
   with their `.alt.txt`, `robots.ts`, `sitemap.ts`).

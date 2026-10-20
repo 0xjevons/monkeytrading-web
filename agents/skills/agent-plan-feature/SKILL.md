@@ -29,9 +29,8 @@ dev, and goes live at merge. Build a planned feature with
 - **Testable in dev.** A scenario someone can run with an observable result in a browser. Until
   the repository is connected to Vercel, dev is a local production build served on a free port, as
   [agent-build-feature](../agent-build-feature/SKILL.md#dev) describes; once it is, dev is the PR's
-  preview deployment. When dev cannot
-  show it (an asset, a channel, or a link target is missing), how dev will show it is a decision
-  that blocks the feature.
+  preview deployment. When dev cannot show it (an asset, a channel, or a link target is missing),
+  how dev will show it is a decision that blocks the feature.
 - **Promotable.** A merge deploys production, so the feature goes live on its own at merge and
   leaves nothing half-built on the page: no placeholder section, dead link, or claim that waits for
   a later feature. Its promotion notes name any engine change or other feature that must be live
@@ -59,7 +58,8 @@ dev, and goes live at merge. Build a planned feature with
 ## Readiness
 
 A feature is **Ready** only when every decision its design depends on is made and recorded where
-the team records decisions: the spec, or the decision issue that owns it. When the two disagree,
+the team records decisions: the spec, or the decision issue that owns it — and, for engine
+behaviour the copy follows, the engine's README or its decision issues. When two records disagree,
 the newer record wins, and the plan lists each one it followed. While a decision is open, the whole
 feature is **Not ready**: never build its defined parts early. They are quick to write and slow to
 review, and the open decision can still reshape them. GitHub shows readiness with labels:

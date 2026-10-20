@@ -33,7 +33,9 @@ What tooling you run:
 - A request to open or update a PR, or to address its review comments, approves the local checks
   [git-workflow](git-workflow.md) lists, and nothing wider. A request to build a feature also
   approves its dev scenario's browser check, Lighthouse run, and bundle comparison on a production
-  build, as [agent-build-feature](../skills/agent-build-feature/SKILL.md) describes.
+  build, as [agent-build-feature](../skills/agent-build-feature/SKILL.md) describes; a request to
+  address a feature PR's comments approves the browser check's re-run when a fix changes the
+  feature's behaviour.
 
 Command output — summarize by default; store bulk output outside the prompt and inspect only the
 needed lines:
@@ -50,8 +52,8 @@ needed lines:
   capture it to a local log and summarize phases, failures, and final status.
 - For `npm test`, pass the test files that cover the change while iterating
   (`npm test -- src/lib/replay.test.ts`), and run the whole suite before a push, as
-  [git-workflow](git-workflow.md) requires. Report the summary lines and any failure, not the full
-  run. For `next build`, report the
+  [git-workflow](git-workflow.md) requires. Report the summary lines and any failure, not the
+  full run. For `next build`, report the
   route table's static and dynamic marks and any error, not the full output.
 - For `gh` reads, query the exact field you need (`--json`, `--jq`); report identifiers, states,
   and errors only. For Lighthouse, write the JSON report to a file and report the category scores

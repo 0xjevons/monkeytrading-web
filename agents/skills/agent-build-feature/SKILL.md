@@ -3,9 +3,10 @@ name: agent-build-feature
 description: >
   Use when implementing a feature — "build #12", "implement this feature", "start the next
   feature". Confirms the feature is ready to build, builds all of it on one branch for one PR
-  (parallel subagents allowed), self-reviews it with agent-code-review, checks its dev scenario in
-  a browser on a production build, and opens the PR through agent-create-pr, ending
-  `Closes #<feature>`. Merges, deploys, and issue writes need the user's approval.
+  (parallel subagents allowed), self-reviews it with agent-code-review, runs its dev scenario in a
+  browser on a production build of the branch before the PR is marked ready, and opens the PR
+  through agent-create-pr ending `Closes #<feature>`, so the merge closes the issue. Merges,
+  deploys, and issue writes need the user's approval.
 ---
 
 # agent-build-feature
@@ -95,16 +96,20 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
   before the PR is marked ready.
 - Show the user the dev scenario — steps, expected result, and the build it runs on — and on their
   yes write it into the issue's dev scenario section, replacing the planned text.
-- The scenario's browser check passes in dev on the PR's head commit.
+- Rebase the branch onto `main` and run the dev scenario in dev on that build, as [Dev](#dev)
+  describes. Show the user the result.
 - Put what promotion needs in the PR body: anything the owner must set at Vercel, ordering against
   an engine change, and rollback when a revert is not enough.
 
-## Opening and merging
+## PR and merge
 
-- Open the PR with agent-create-pr, ending `Closes #<feature>`: the dev scenario passed on the
-  branch before the PR was marked ready, so the merge finishes the feature and closes its issue.
+- Open the PR with agent-create-pr, ending `Closes #<feature>`, never `Part of #<feature>`. The PR
+  is marked ready only after the dev scenario has passed on the rebased branch, so the merge
+  finishes the feature and GitHub closes the issue.
 - Answer review with [agent-address-pr-comments](../agent-address-pr-comments/SKILL.md), aiming for
   one round.
+- A later push that changes the feature's behaviour, from a review fix or a rebase, runs the dev
+  scenario again on the new head and shows the user the result before the PR merges.
 - The merge is the promotion: it deploys production once Vercel is connected, and it happens only
   on the owner's go-ahead, as [agent-create-pr](../agent-create-pr/SKILL.md#merging) describes.
 
@@ -112,5 +117,6 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 
 - One feature never spans several pushed branches or PRs.
 - Never build part of a feature that is not ready.
-- Never write to a GitHub issue without the user's yes to the exact text.
+- Never write to a GitHub issue without the user's yes to the exact text. The one exception is the
+  merge closing the feature issue through `Closes #<feature>`.
 - Never merge, deploy, or change an environment without explicit per-action approval.

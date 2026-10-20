@@ -100,9 +100,10 @@ When: components, hooks, anything under `src/app/`, `next.config.ts`.
 - Are list keys stable ids from the data, never the array index of a list that inserts, removes,
   or reorders?
 - Is no `ref.current` read or written during render?
-- Does every route stay statically rendered — `○ (Static)` in the `next build` route table — with
-  no request-time API (`cookies()`, `headers()`, `connection()`, `searchParams`, uncached
-  `fetch`) and no `dynamic` export?
+- Does every route stay prerendered at build time — `○ (Static)` in the `next build` route table,
+  or `● (SSG)` with `dynamicParams = false` so no unlisted path renders on demand — with no
+  request-time API (`cookies()`, `headers()`, `connection()`, `searchParams`, uncached `fetch`)
+  and no `dynamic` export?
 - Does the change add a route handler (`route.ts`), server action, `proxy.ts`, or `next/script`
   tag? Each needs the owner's approval first: the site has no backend. Metadata routes
   (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are fine while they stay static.
@@ -117,7 +118,8 @@ during the build.
   in a comment?
 - Are values that mirror engine state — prices, amounts, basis points — integers in a stated unit
   (cents, thousandths, basis points) with the engine's rounding (truncation toward zero), never
-  floats? Floats are for layout and animation only.
+  floats? Floats are for layout, animation, and the seeded generator's draws, never for a value
+  that mirrors engine state.
 - Is every simulation seeded, with time taken from its tick count, never the wall clock, so the
   server-rendered first frame, the client's first frame, and the tests agree?
 - Is hashing from `@noble/hashes`, never home-rolled?

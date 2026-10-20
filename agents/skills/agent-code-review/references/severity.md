@@ -16,9 +16,15 @@ multi-agent reviewer. Grade each finding by its impact; confidence is a separate
 - **Low** — maintainability or consistency cost with no behavior impact.
 - **Nit** — style or wording.
 
-Safety and process rules are those whose breach does harm by itself: `no-deploy`, secrets, the
-privacy rules of the development checklist and its public-copy rules on engine claims and status,
-competitor names, internal build management, investment claims and the risk notice, and names and
-contacts, pushes or GitHub posts without approval, and `no-guessing-current-state`. Any other rule
-or skill — imports, naming, comments, formatting, `minimal-change` — is graded by its impact like
-any other finding, usually Low or Nit.
+Safety and process rules are those whose breach does harm by itself:
+
+- `no-deploy`;
+- secrets;
+- the development checklist's privacy rules;
+- its public-copy rules on engine claims and status, competitor names, internal build management,
+  investment claims and the risk notice, and names and contacts;
+- pushes or GitHub posts without approval;
+- `no-guessing-current-state`.
+
+Any other rule or skill — imports, naming, comments, formatting, `minimal-change` — is graded by
+its impact like any other finding, usually Low or Nit.
