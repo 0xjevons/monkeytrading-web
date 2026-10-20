@@ -5,12 +5,13 @@ Every relative Markdown link under agents/ and in the root *.md files must resol
 directory in the repository, and the root AGENTS.md and CLAUDE.md, when present, must be symlinks
 to agents/AGENTS.md. A path is in the repository when git tracks it or would add it (untracked and
 not ignored), so an ignored local file, which CI's checkout lacks, never counts. A symlink counts
-only when the path it leads to is in the repository too, and a symlinked page is read at that
-path. A link starting with `/` resolves from the repository root, as GitHub renders it. Anchors
-are not checked.
+only when the path it leads to exists and is in the repository too, and a symlinked page is read
+at that path. A link starting with `/` resolves from the repository root, as GitHub renders it.
+Anchors are not checked.
 
 Links in fenced code blocks and code spans are skipped. An indented code block reads as prose, so
-an example link belongs in a fenced block.
+an example link belongs in a fenced block. Markdown the check cannot read fails it rather than
+being skipped: a `](` outside every link it recognizes, and a code fence that never closes.
 
 Run from anywhere in the repository. Prints a summary and exits 0, or lists every failure on
 stderr and exits 1.
@@ -25,11 +26,17 @@ from urllib.parse import unquote, urlsplit
 INDEX = "agents/AGENTS.md"
 INDEX_LINKS = ("AGENTS.md", "CLAUDE.md")
 
-# A backtick fence's info string holds no backtick.
-FENCE = re.compile(r"\s*(`{3,}(?!.*`)|~{3,})")
-# A code span opens and closes on whole backtick runs of one length, and may wrap onto the next
-# line but never across a blank line.
-CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\n).)+?(?<!`)\1(?!`)", re.DOTALL)
+# A fence opens after indentation, block-quote markers, and list markers; a backtick fence's info
+# string holds no backtick. It closes after indentation and as many block-quote markers.
+CONTAINERS = r"(?:[ \t]*>[ \t]?|[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)*"
+FENCE = re.compile(CONTAINERS + r"[ \t]*(`{3,}(?!.*`)|~{3,})")
+QUOTE = re.compile(r"(?:[ \t]*>)*")
+# A code span closes on the next backtick run of its opening run's length, before a blank line.
+SPAN_END = re.compile(r"`+|\n[ \t]*\n")
+BACKTICKS = re.compile(r"`+")
+# Markdown lets a backslash escape any ASCII punctuation.
+PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+ESCAPE = re.compile(r"\\([!-/:-@\[-`{-~])")
 # Markdown's link syntax, with backslash escapes and one level of nested brackets or parentheses.
 TEXT = r"\[(?:[^\[\]\\]|\\.|\[(?:[^\[\]\\]|\\.)*\])*\]"
 DEST = r"<(?:[^<>\n\\]|\\.)*>|(?:[^\s()\\]|\\.|\((?:[^\s()\\]|\\.)*\))+"
@@ -40,8 +47,6 @@ INLINE_LINK = re.compile(rf"{TEXT}\(\s*({DEST})(?:\s+(?:{TITLE}))?\s*\)", re.DOT
 REFERENCE = re.compile(
     r"^ {0,3}\[(?!\^)(?:[^\[\]\\]|\\.)+\]:[ \t]*\n?[ \t]*(<(?:[^<>\n\\]|\\.)*>|\S+)", re.MULTILINE
 )
-# Markdown lets a backslash escape any ASCII punctuation.
-ESCAPE = re.compile(r"\\([!-/:-@\[-`{-~])")
 
 
 def git(*args):
@@ -66,38 +71,85 @@ def repo_paths():
     return files, paths
 
 
-def index_link_errors(files):
+def index_link_errors(files, paths):
     """Return an error for each root index name present but not a symlink to INDEX."""
     index_exists = INDEX in files and os.path.isfile(INDEX)
     return [
         f"{name}: must be a symlink to {INDEX}"
         for name in INDEX_LINKS
-        if name in files
+        if name in paths
         and not (index_exists and os.path.islink(name) and real(name) == real(INDEX))
     ]
 
 
-def links(text):
-    """Yield (line number, destination) for each link outside code, in file order."""
-    kept, fence = [], None
-    for line in text.split("\n"):
-        stripped = line.strip()
+def blank_fences(text):
+    """Return the text with fenced code blanked line for line, and the line of an unclosed fence."""
+    kept, fence, opened, depth = [], None, None, 0
+    for number, line in enumerate(text.split("\n"), 1):
         if fence:
-            if len(stripped) >= len(fence) and stripped == fence[0] * len(stripped):
+            quote = QUOTE.match(line).group()
+            rest = line[len(quote) :].strip()
+            closes = len(rest) >= len(fence) and rest == fence[0] * len(rest)
+            if closes and quote.count(">") == depth:
                 fence = None
             line = ""
         elif match := FENCE.match(line):
-            fence = match.group(1)
+            fence, opened, depth = match.group(1), number, line[: match.start(1)].count(">")
             line = ""
         kept.append(line)
-    # Blanking code keeps its line breaks, so line numbers still match the file.
-    prose = CODE_SPAN.sub(lambda span: "\n" * span.group().count("\n"), "\n".join(kept))
-    # Matching at every unescaped `[` also finds an image inside a link's text.
-    brackets = re.finditer(r"(?<!\\)\[", prose)
-    inline = (INLINE_LINK.match(prose, bracket.start()) for bracket in brackets)
-    found = [match for match in inline if match] + list(REFERENCE.finditer(prose))
-    for match in sorted(found, key=lambda match: match.start(1)):
-        yield prose.count("\n", 0, match.start(1)) + 1, match.group(1)
+    return "\n".join(kept), opened if fence else None
+
+
+def blank_code_spans(prose):
+    """Blank code spans in place, keeping line breaks, and find the unescaped `[` and `](`.
+
+    Returns the blanked text with the offsets of each `[` and each `](` outside code spans.
+    """
+    out, opens, closes, i = list(prose), [], [], 0
+    while i < len(prose):
+        char = prose[i]
+        if char == "\\" and prose[i + 1 : i + 2] in PUNCTUATION:
+            i += 2
+            continue
+        if char == "`":
+            run = BACKTICKS.match(prose, i).end() - i
+            end = None
+            for match in SPAN_END.finditer(prose, i + run):
+                if match.group().startswith("\n"):
+                    break
+                if len(match.group()) == run:
+                    end = match.end()
+                    break
+            if end:
+                out[i:end] = ["\n" if c == "\n" else " " for c in prose[i:end]]
+            i = end or i + run
+            continue
+        if char == "[":
+            opens.append(i)
+        elif char == "]" and prose[i + 1 : i + 2] == "(":
+            closes.append(i)
+        i += 1
+    return "".join(out), opens, closes
+
+
+def parse(text):
+    """Return a page's links and problems as (line, destination, problem), in file order."""
+    prose, unclosed = blank_fences(text)
+    prose, opens, closes = blank_code_spans(prose)
+    inline = [match for match in (INLINE_LINK.match(prose, start) for start in opens) if match]
+
+    def line(offset):
+        return prose.count("\n", 0, offset) + 1
+
+    found = [(line(m.start(1)), m.group(1), None) for m in [*inline, *REFERENCE.finditer(prose)]]
+    found += [
+        (line(close), None, "a link the check cannot read")
+        for close in closes
+        if not any(match.start() <= close < match.end() for match in inline)
+    ]
+    if unclosed:
+        found.append((unclosed, None, "a code fence that never closes"))
+    return sorted(found, key=lambda item: item[0])
 
 
 def resolve(source, dest):
@@ -113,7 +165,7 @@ def resolve(source, dest):
 def main():
     os.chdir(git("rev-parse", "--show-toplevel").strip())
     files, paths = repo_paths()
-    errors = index_link_errors(files)
+    errors = index_link_errors(files, paths)
     pages = set()
     for path in sorted(files):
         if path.endswith(".md") and (path.startswith("agents/") or "/" not in path):
@@ -125,12 +177,15 @@ def main():
     for page in sorted(pages):
         with open(page, encoding="utf-8") as markdown:
             text = markdown.read()
-        for line, dest in links(text):
+        for line, dest, problem in parse(text):
+            if problem:
+                errors.append(f"{page}:{line}: {problem}")
+                continue
             target = resolve(page, dest)
             if target is None:
                 continue
             checked += 1
-            if target not in paths or real(target) not in paths:
+            if not (target in paths and real(target) in paths and os.path.exists(target)):
                 errors.append(
                     f"{page}:{line}: {dest} does not resolve to a file in the repository"
                 )

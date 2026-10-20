@@ -27,7 +27,7 @@ text](rules/a.md), ![logo](logo.svg "Logo"), [web](https://example.com), [mail](
 [spaced](<rules/b c.md>), [encoded](rules/b%20c.md), [up](../README.md), [root](../),
 [`code`](rules/a.md), [rooted](/LICENSE), [network](//example.com/missing.md),
 [parens](rules/c(1).md), [escaped](rules/c\(1\).md), [titled](rules/a.md (Rule)),
-[a \] bracket](rules/a.md), \[escaped bracket](missing.md), [![badge](logo.svg)](rules/a.md)
+[a \] bracket](rules/a.md), \[escaped bracket\](missing.md), [![badge](logo.svg)](rules/a.md)
 ([in parentheses](rules/a.md)).
 
 [label]: rules/a.md
@@ -35,13 +35,18 @@ text](rules/a.md), ![logo](logo.svg "Logo"), [web](https://example.com), [mail](
   rules/a.md
 [^note]: A footnote, not a link.
 
-`[span](missing.md)` and ``[double `span`](missing.md)``
+`[span](missing.md)` and ``[double `span`](missing.md)`` and `a`` [longer run](missing.md) b`
 
 ``[run](rules/a.md)` is a link, since a run of two backticks closes only on two.
 
 ```[triple](missing.md)``` opens no fence, so [this](rules/a.md) counts.
 
 A stray ` backtick ends with its paragraph.
+
+An escaped \` backtick opens nothing, so [escaped tick](rules/a.md) counts, as `code` does not.
+An escaped backslash leaves the bracket open: \\[double backslash](rules/a.md).
+A backslash is literal in code, so `C:\` closes and [after the span](rules/a.md) counts.
+Prose with ``` inside opens no fence, so [after prose](rules/a.md) counts.
 
 [after](rules/a.md) and a later ` backtick.
 
@@ -58,9 +63,17 @@ A stray ` backtick ends with its paragraph.
 [nested](missing.md)
 ```
 ````
+
+- ```md
+  [fenced in a list](missing.md)
+  ```
+
+> ~~~
+> [fenced in a quote](missing.md)
+> ~~~
 """
 
-# Twenty-five relative links in six pages: the index's twenty-three, the README's, and one in a
+# Twenty-nine relative links in six pages: the index's twenty-seven, the README's, and one in a
 # page read through its symlink. The ignored and the out-of-scope pages are not read.
 VALID = {
     ".gitignore": "/agents/.processes/\n",
@@ -76,7 +89,7 @@ VALID = {
     "docs/shared.md": "[rule](../agents/rules/a.md)\n",
 }
 VALID_SYMLINKS = {**INDEX_LINKS, "agents/shared.md": "../docs/shared.md"}
-VALID_OUTPUT = "Checked 25 relative links in 6 Markdown files.\n"
+VALID_OUTPUT = "Checked 29 relative links in 6 Markdown files.\n"
 
 
 def broken(where, dest):
@@ -85,6 +98,10 @@ def broken(where, dest):
 
 def unresolved(path):
     return f"{path}: does not resolve to a file in the repository"
+
+
+def unreadable(where):
+    return f"{where}: a link the check cannot read"
 
 
 # name: (files, symlinks, files deleted after staging, errors)
@@ -97,6 +114,12 @@ FAILURES = {
     ),
     "wrapped link text": (
         {"agents/AGENTS.md": "[wrapped\ntext](none.md)\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:2", "none.md")],
+    ),
+    "line numbers after a wrapped code span": (
+        {"agents/AGENTS.md": "`a\nb` [rule](none.md)\n"},
         {},
         [],
         [broken("agents/AGENTS.md:2", "none.md")],
@@ -136,6 +159,51 @@ FAILURES = {
         {},
         [],
         [broken("agents/AGENTS.md:1", "none.png")],
+    ),
+    "escaped backtick": (
+        {"agents/AGENTS.md": "An escaped \\` backtick; see [rule](none.md) and `rg`.\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:1", "none.md")],
+    ),
+    "escaped backslash before a bracket": (
+        {"agents/AGENTS.md": "An escaped backslash: \\\\[rule](none.md).\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:1", "none.md")],
+    ),
+    "fence opened after a list marker": (
+        {"agents/AGENTS.md": "- ~~~md\n  code\n  ~~~\n\n[rule](none.md)\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:5", "none.md")],
+    ),
+    "fence closed in a block quote": (
+        {"agents/AGENTS.md": "> ```\n> [code](none.md)\n> ```\n\n[rule](none.md)\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:5", "none.md")],
+    ),
+    "link syntax the check cannot read": (
+        {
+            "agents/AGENTS.md": "[deep [nest [ing]]](rules/a.md)\n[x](rules/a((1)).md)\n",
+            "agents/rules/a.md": "",
+        },
+        {},
+        [],
+        [unreadable("agents/AGENTS.md:1"), unreadable("agents/AGENTS.md:2")],
+    ),
+    "fence closed only at its block-quote depth": (
+        {"agents/AGENTS.md": "```md\n> ```\n[code](none.md)\n```\n\n[rule](none.md)\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:6", "none.md")],
+    ),
+    "fence that never closes": (
+        {"agents/AGENTS.md": "# Index\n\n```sh\n[code](none.md)\n"},
+        {},
+        [],
+        ["agents/AGENTS.md:3: a code fence that never closes"],
     ),
     "outside the repository": (
         {"agents/AGENTS.md": "[up](../../outside.md)\n"},
@@ -181,6 +249,18 @@ FAILURES = {
         [],
         [broken("agents/AGENTS.md:1", "logo.svg")],
     ),
+    "symlink cycles": (
+        {"agents/AGENTS.md": "![self](self.svg)\n![pair](a.svg)\n"},
+        {"agents/self.svg": "self.svg", "agents/a.svg": "b.svg", "agents/b.svg": "a.svg"},
+        [],
+        [broken("agents/AGENTS.md:1", "self.svg"), broken("agents/AGENTS.md:2", "a.svg")],
+    ),
+    "page symlink cycle": (
+        {"LICENSE": ""},
+        {"agents/loop.md": "loop.md"},
+        [],
+        [unresolved("agents/loop.md")],
+    ),
     "page symlink to a missing file": (
         {"LICENSE": ""},
         {"agents/old.md": "missing.md"},
@@ -204,6 +284,12 @@ FAILURES = {
         {"CLAUDE.md": "agents/AGENTS.md"},
         [],
         ["AGENTS.md: must be a symlink to agents/AGENTS.md"],
+    ),
+    "directory at an index name": (
+        {"CLAUDE.md/notes.txt": "", "agents/AGENTS.md": "# Index\n"},
+        {"AGENTS.md": "agents/AGENTS.md"},
+        [],
+        ["CLAUDE.md: must be a symlink to agents/AGENTS.md"],
     ),
     "index link to another page": (
         {"README.md": "", "agents/AGENTS.md": "# Index\n"},
