@@ -76,8 +76,8 @@ Run from the repo root, with Node.js from `.nvmrc` and npm:
   [agent-create-pr](skills/agent-create-pr/SKILL.md#merging) describes.
 - **A merge is a production deploy.** Once the repository is connected to Vercel, every merge to
   `main` deploys production and every pushed branch gets a preview deployment. Agents never change
-  Vercel settings, environment variables, domains, or DNS, and never trigger a deploy
-  ([no-deploy](rules/no-deploy.md)).
+  Vercel settings, environment variables, domains, or DNS, and never trigger a deploy, without the
+  owner's explicit approval for that action ([no-deploy](rules/no-deploy.md)).
 - **Statically rendered, with no backend.** Every route prerenders at build time; nothing may make a
   route dynamic or add a route handler (`route.ts`), server action, or proxy without the owner's
   approval. Metadata routes (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are fine while

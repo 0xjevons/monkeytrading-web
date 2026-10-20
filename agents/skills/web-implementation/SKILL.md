@@ -219,8 +219,8 @@ in a test file: a test cannot reset it, and a second instance of a component can
   in `siteUrl()` in `src/lib/site.ts` and nowhere else: `SITE_URL`, an optional override of the
   canonical origin, and `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel sets.
 - A new variable needs a safe default or a build that fails without it, a line in the README's
-  deployment section, and the owner to set it at Vercel; agents never set it
-  ([no-deploy](../../rules/no-deploy.md)).
+  deployment section, and the owner to set it at Vercel; an agent sets it only on the owner's
+  explicit approval for that action ([no-deploy](../../rules/no-deploy.md)).
 - From the environment, only `NEXT_PUBLIC_*` variables and `NODE_ENV` reach the browser, and
   everything in them is public; never put anything secret in one. `next.config.ts` has no `env`
   key: values set there ship to the client whatever their names.
@@ -235,6 +235,10 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - Tailwind CSS 4, configured in CSS: `src/app/globals.css` imports `tailwindcss` and declares the
   design tokens in `@theme`, and PostCSS runs `@tailwindcss/postcss`. There is no
   `tailwind.config.*` file.
+- Class detection is limited to `src/`: `globals.css` imports Tailwind as
+  `@import "tailwindcss" source("..");`, a path relative to the stylesheet. Without the limit,
+  Tailwind scans every file git does not ignore, so words and example classes in `agents/` or the
+  README would add rules to the stylesheet every visitor downloads.
 - Colours come only from theme tokens (`text-fg-2`, `border-line-2`, `bg-glow`). A raw colour in a
   class (`bg-[#8affc0]`) or a `style` is a defect: contrast is checked per token pair, and an
   off-token colour escapes that check. A new colour is a new `--color-*` token, checked against
@@ -305,9 +309,9 @@ The bar is WCAG 2.2 AA; the [development checklist](../../rules/development-chec
 - Budgets, on a production build: Lighthouse in its mobile configuration scores 95 or more in
   Performance, Accessibility, Best Practices, and SEO, with LCP at most 2.5 s, CLS at most 0.1, and
   Total Blocking Time at most 200 ms. Run Lighthouse from outside the repository at an exact
-  version (`npm view lighthouse version`) against the port `npm start` reports, and keep its JSON
-  report in the run
-  directory.
+  version (`npm view lighthouse version`) against a local production build, on the port
+  `npm start` reports — never a preview deployment, whose hosting settings are not production's —
+  and keep its JSON report in a gitignored run directory under `agents/.processes/dev-runs/`.
 - Client components stay small: logic lives in `src/lib`, server components render everything
   static, and a client component holds only what changes.
 - Import a package's specific entry point (`@noble/hashes/sha3.js`, not the package root), so the

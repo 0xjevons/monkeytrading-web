@@ -246,8 +246,8 @@ README.
   that CFDs are complex and leveraged and losses can be rapid, that the software is pre-launch and
   nothing on the site is an offer, and where it is not available — with its substance changed only
   on the owner's instruction?
-- Are the only names, accounts, and contact those in `src/lib/site.ts`, with no other person,
-  account, or machine path?
+- Are the only people, accounts, and contacts named those in `src/lib/site.ts` and the William
+  Jevons persona, with no other person, account, or machine path?
 - Is public prose written as prose, following [writing-style](writing-style.md)?
 
 ## 13. Rollout
@@ -258,7 +258,8 @@ Vercel.
 - Is the change safe to deploy the moment it merges, and to roll back by reverting its PR?
 - Do existing URLs and in-page anchors that others may have linked to still resolve?
 - Does anything need an owner action at Vercel — an environment variable, a domain — and does the
-  PR body say so as its own bullet? Agents never make that change ([no-deploy](no-deploy.md)).
+  PR body say so as its own bullet? An agent makes that change only on the owner's explicit
+  approval for it ([no-deploy](no-deploy.md)).
 
 ## 14. Errors
 
