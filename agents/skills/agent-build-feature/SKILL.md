@@ -4,8 +4,8 @@ description: >
   Use when implementing a feature — "build #12", "implement this feature", "start the next
   feature". Confirms the feature is ready to build, builds all of it on one branch for one PR
   (parallel subagents allowed), self-reviews it with agent-code-review, checks its dev scenario in
-  a browser on a production build, opens the PR through agent-create-pr, and checks the scenario
-  again on `main` after merge. Merges, deploys, and issue writes need the user's approval.
+  a browser on a production build, and opens the PR through agent-create-pr, ending
+  `Closes #<feature>`. Merges, deploys, and issue writes need the user's approval.
 ---
 
 # agent-build-feature
@@ -18,8 +18,9 @@ goes straight through [git-workflow](../../rules/git-workflow.md) and
 
 ## Dev
 
-Dev is a production build checked in a browser: a local `npm run build && npm start` until the
-repository is connected to Vercel, and the PR's preview deployment once it is
+Dev is a production build checked in a browser: a local build (`npm run build`, then
+`npm start -- --port <port>` on a free port) until the repository is connected to Vercel, and the
+PR's preview deployment once it is
 ([no-guessing-current-state](../../rules/no-guessing-current-state.md) says how to tell). A merge
 deploys production, so the dev scenario passes before the PR is marked ready, not after.
 
@@ -29,7 +30,6 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
   that port only once the server's log says it listens there. `next start` exits when its port is
   taken, so a request to the default port could reach another server, such as a dev server, and
   judge the wrong build.
-
 - Use Playwright from a scratch directory outside the repository, at an exact version of the
   official `playwright` package (`npm view playwright version`); it never becomes a dependency of
   this repo. Run the script from beside that install so its imports resolve.
@@ -98,18 +98,14 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 - Put what promotion needs in the PR body: anything the owner must set at Vercel, ordering against
   an engine change, and rollback when a revert is not enough.
 
-## Merge and dev run
+## Opening and merging
 
-- Open the PR with agent-create-pr, ending `Part of #<feature>`: the feature closes after its run
-  on `main`, not at merge.
+- Open the PR with agent-create-pr, ending `Closes #<feature>`: the dev scenario passed on the
+  branch before the PR was marked ready, so the merge finishes the feature and closes its issue.
 - Answer review with [agent-address-pr-comments](../agent-address-pr-comments/SKILL.md), aiming for
   one round.
 - The merge is the promotion: it deploys production once Vercel is connected, and it happens only
   on the owner's go-ahead, as [agent-create-pr](../agent-create-pr/SKILL.md#merging) describes.
-- After merge, run the dev scenario on `main`: against the production deployment once Vercel is
-  connected and reports that deployment of the merge commit as ready — reading a page is not a
-  deploy — or on a local production build of `main` until then.
-  Show the user the result, and on their yes record it on the issue and close it.
 
 ## Rules
 

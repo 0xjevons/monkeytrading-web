@@ -103,8 +103,9 @@ When: components, hooks, anything under `src/app/`, `next.config.ts`.
 - Does every route stay statically rendered — `○ (Static)` in the `next build` route table — with
   no request-time API (`cookies()`, `headers()`, `connection()`, `searchParams`, uncached
   `fetch`) and no `dynamic` export?
-- Does the change add a route handler, server action, `proxy.ts`, or `next/script` tag? Each needs
-  the owner's approval first: the site has no backend.
+- Does the change add a route handler (`route.ts`), server action, `proxy.ts`, or `next/script`
+  tag? Each needs the owner's approval first: the site has no backend. Metadata routes
+  (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are fine while they stay static.
 
 ## 5. Simulations and engine rules
 

@@ -161,7 +161,9 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - Keep the default build output, never `output: "export"`: a static export drops the `headers()`
   that carry the security headers.
 - No backend: no route handler (`route.ts`), server action (`"use server"`), `proxy.ts`, or runtime
-  data fetching without the owner's approval.
+  data fetching without the owner's approval. Metadata routes (`robots.ts`, `sitemap.ts`,
+  `manifest.ts`, image routes) are special route handlers that Next.js prerenders; they are fine
+  while the build marks them `○ (Static)`.
 - Route files follow the App Router file conventions in `src/app/`: `layout.tsx`, `page.tsx`, and
   the metadata files (`icon.svg`, `apple-icon.png`, `opengraph-image.png` and `twitter-image.png`
   with their `.alt.txt`, `robots.ts`, `sitemap.ts`).

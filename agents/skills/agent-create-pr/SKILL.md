@@ -5,7 +5,8 @@ description: >
   this work" — or when the owner says a PR may merge. Covers opening every PR as a draft, the
   preconditions for marking it ready (including a multi-agent agent-code-review at medium or
   higher), the issue blocker check, the `[scopes] Title` and the body in squashed-commit format
-  ending with `Closes #12` or `Part of #12`, watching the checks after it opens, and, on the
+  ending with `Closes #12` (every feature PR) or `Part of #12` (a supporting PR that does not
+  finish its issue), watching the checks after it opens, and, on the
   owner's go-ahead in chat, posting `merge-approved` and merging the PR. Does not review or
   approve.
 ---
@@ -74,7 +75,8 @@ checklist, no restatement of the diff.
   diff cannot show gets its own bullet: a required env or secret change, an ordering constraint
   against another PR or a deploy, a manual step.
 - **End with the issue** when the PR is tied to one, one line per issue in the branch name:
-  `Closes #12` when the merge finishes the issue, `Part of #12` when it does not.
+  `Closes #12` when the merge finishes the issue, as a feature PR's always does; `Part of #12` only
+  for a supporting PR that does not finish its issue.
 - **End state only.** Describe what the branch does, never how it got there: no review history,
   alternatives considered, "X instead of Y", "no longer", or notes addressed to reviewers. Context
   a reviewer needs goes in a PR comment. The text follows

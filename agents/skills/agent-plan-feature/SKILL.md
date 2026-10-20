@@ -27,8 +27,9 @@ dev, and goes live at merge. Build a planned feature with
   that behaviour being settled in the engine's README or its decision issues in
   `0xjevons/monkeytrading`. An open engine decision blocks it like any other decision.
 - **Testable in dev.** A scenario someone can run with an observable result in a browser. Until
-  the repository is connected to Vercel, dev is a local production build
-  (`npm run build && npm start`); once it is, dev is the PR's preview deployment. When dev cannot
+  the repository is connected to Vercel, dev is a local production build served on a free port, as
+  [agent-build-feature](../agent-build-feature/SKILL.md#dev) describes; once it is, dev is the PR's
+  preview deployment. When dev cannot
   show it (an asset, a channel, or a link target is missing), how dev will show it is a decision
   that blocks the feature.
 - **Promotable.** A merge deploys production, so the feature goes live on its own at merge and
