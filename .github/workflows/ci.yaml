@@ -38,7 +38,8 @@ jobs:
           "$RUNNER_TEMP/actionlint"
 
   # Checks that every relative Markdown link under agents/ and in the root *.md files resolves to
-  # a file in the repository, and that AGENTS.md and CLAUDE.md are symlinks to agents/AGENTS.md.
+  # a file or directory in the repository, and that AGENTS.md and CLAUDE.md, when present, are
+  # symlinks to agents/AGENTS.md.
   docs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -51,8 +52,8 @@ jobs:
       - name: Check docs
         run: python3 scripts/check-docs.py
 
-  # The one check branch rules require: it passes only when every job above succeeded, so each new
-  # job must be added to `needs`.
+  # The one CI check branch rules require: it passes only when every job above succeeded, so each
+  # new job must be added to `needs`.
   ci-passed:
     if: always()
     needs: [workflows, docs]
