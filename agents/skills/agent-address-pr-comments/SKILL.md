@@ -130,7 +130,7 @@ change:
 sentences.
 
 ```
-Fixed — the ticker clears its interval on cleanup, so StrictMode's second setup no longer starts a second timer.
+Fixed — every effect's cleanup undoes its setup, so StrictMode's second run starts no second timer.
 ```
 
 ```
@@ -148,7 +148,8 @@ tags, headings, lists, code blocks, restating the comment, or AI signature.
 
 - Fix each `Fix` item by class, as
   [Fixing an accepted finding](../agent-code-review/SKILL.md#fixing-an-accepted-finding) says: its
-  invariant and the sites fixed go in the item's `Changes`, and its reply states the invariant.
+  invariant and the sites fixed go in the branch's fix notes and the item's `Changes`, and its reply
+  states the invariant.
 - Check every fix against the applicable sections of
   [development-checklist](../../rules/development-checklist.md): a fix must not open a new
   hydration, accessibility, privacy, or test gap, and it must remove the failure, not just the
@@ -175,8 +176,9 @@ Number every item and keep the numbers in later discussion:
 1. https://github.com/<owner>/<repo>/pull/42#discussion_r3845829157
    Comment: The ticker starts a second interval under StrictMode.
    Severity: Medium — the missing cleanup leaks a timer each time the panel remounts.
-   Changes: The ticker's effect clears its interval on cleanup.
-   Reply: Fixed — the ticker clears its interval on cleanup, so StrictMode's second setup no longer starts a second timer.
+   Changes: Every effect's cleanup undoes its setup — the ticker clears its interval, and the
+   observer and listener it adds are removed.
+   Reply: Fixed — every effect's cleanup undoes its setup, so StrictMode's second run starts no second timer.
 ```
 
 After the items, show every proposed commit message, then the exact updated PR description or
