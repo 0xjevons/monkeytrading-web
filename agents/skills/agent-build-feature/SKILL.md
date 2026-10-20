@@ -21,7 +21,7 @@ goes straight through [git-workflow](../../rules/git-workflow.md) and
 
 Dev is a production build checked in a browser: a local build (`npm run build`, then
 `npm start -- --port <port>` on a free port) until the repository is connected to Vercel, and the
-PR's preview deployment once it is
+branch's preview deployment of the pushed head once it is
 ([no-guessing-current-state](../../rules/no-guessing-current-state.md) says how to tell). A merge
 deploys production, so the dev scenario passes before the PR is marked ready, not after. A check
 made before a push, such as on a review fix not yet pushed, runs on a local production build of the
@@ -29,10 +29,10 @@ working tree: a head has no preview until it is pushed.
 
 The scenario's check is a script that drives a browser, so anyone can run it again:
 
-- Serve a local build with `npm start -- --port <port>` on a free port, and point the script at
-  that port only once the server's log says it listens there. `next start` exits when its port is
-  taken, so a request to the default port could reach another server, such as a dev server, and
-  judge the wrong build.
+- Serve a local build with `npm start -- --port <port>` on a free port, its output captured to a
+  log in the run directory, and point the script at that port only once the log says it listens
+  there. `next start` exits when its port is taken, so a request to the default port could reach
+  another server, such as a dev server, and judge the wrong build.
 - Use Playwright from a scratch directory outside the repository, at an exact version of the
   official `playwright` package (`npm view playwright version`); it never becomes a dependency of
   this repo. Run the script from beside that install so its imports resolve.
@@ -93,13 +93,17 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 
 - Run the local checks per git-workflow.
 - Self-review with [agent-code-review](../agent-code-review/SKILL.md), multi-agent at `medium` or
-  higher: fix every accepted Critical, High, and Medium finding and run it again until a run accepts
-  none, as [agent-create-pr](../agent-create-pr/SKILL.md#before-a-pr-is-ready-for-review) requires
-  before the PR is marked ready.
+  higher: fix every accepted Critical, High, and Medium finding by class
+  ([Fixing an accepted finding](../agent-code-review/SKILL.md#fixing-an-accepted-finding)) and run
+  it again until a run accepts none, as
+  [agent-create-pr](../agent-create-pr/SKILL.md#before-a-pr-is-ready-for-review) requires before
+  the PR is marked ready.
 - Show the user the dev scenario — steps, expected result, and the build it runs on — and on their
   yes write it into the issue's dev scenario section, replacing the planned text.
 - Rebase the branch onto `main` and run the dev scenario in dev on that build, as [Dev](#dev)
-  describes. Show the user the result.
+  describes. Show the user the result. The site's CI runs no browser job, so this check, not CI,
+  is the scenario's gate; a browser job in CI is the operator's call
+  ([general-practices](../../rules/general-practices.md)).
 - Put what promotion needs in the PR body: anything the owner must set at Vercel, ordering against
   an engine change, and rollback when a revert is not enough.
 

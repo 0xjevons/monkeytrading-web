@@ -21,10 +21,11 @@ Load on request before any command that changes a live environment, and before m
   - linking a checkout to a Vercel project (`vercel link`);
   - changing GitHub repository settings, rulesets, Actions secrets, or variables, which can bypass
     the merge gate.
-- A push to a PR branch builds a preview deployment through Vercel's Git integration once the
-  repository is connected. That preview is expected and needs no approval of its own; the push
-  itself still follows [git-workflow](git-workflow.md). Reading a preview or production page in a
-  browser, or its response headers with `curl -sI`, changes nothing and is not a deploy.
+- A push to any branch other than `main` builds a preview deployment through Vercel's Git
+  integration once the repository is connected. That preview is expected and needs no approval of
+  its own; the push itself still follows [git-workflow](git-workflow.md). Reading a preview or
+  production page in a browser, or its response headers with `curl -sI`, changes nothing and is
+  not a deploy.
 - `next dev` or `next start` on the agent's own machine is not a live environment; a Vercel
   preview or production deployment, the domain, and its DNS are.
 - Approval covers one action. A yes to merge one PR is not a yes to merge another or to change an

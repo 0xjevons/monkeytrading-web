@@ -158,15 +158,15 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - The site is statically rendered: every route prerenders at build time, and `next build` marks it
   `○ (Static)`, or `● (SSG)` for a dynamic segment whose `generateStaticParams` lists every path
   and whose `dynamicParams = false` stops any other from rendering on demand. Never use a
-  request-time API — `cookies()`, `headers()`, `connection()`,
-  `draftMode()`, a page's `searchParams` — an uncached `fetch`, or a `dynamic` export. Read the
-  route table after every change under `src/app/`.
+  request-time API — `cookies()`, `headers()`, `connection()`, `draftMode()`, a page's
+  `searchParams` — an uncached `fetch`, or a `dynamic` export. Read the route table after every
+  change under `src/app/`.
 - Keep the default build output, never `output: "export"`: a static export drops the `headers()`
   that carry the security headers.
 - No backend: no route handler (`route.ts`), server action (`"use server"`), `proxy.ts` (or the
-  deprecated `middleware.ts`), or runtime data fetching without the owner's approval. Metadata routes (`robots.ts`, `sitemap.ts`,
-  `manifest.ts`, image routes) are special route handlers that Next.js prerenders; they are fine
-  while the build marks them prerendered.
+  deprecated `middleware.ts`), or runtime data fetching without the owner's approval. Metadata
+  routes (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are special route handlers that
+  Next.js prerenders; they are fine while the build marks them prerendered.
 - Route files follow the App Router file conventions in `src/app/`: `layout.tsx`, `page.tsx`, and
   the metadata files (`icon.svg`, `apple-icon.png`, `opengraph-image.png` and `twitter-image.png`
   with their `.alt.txt`, `robots.ts`, `sitemap.ts`).
@@ -320,8 +320,9 @@ The bar is WCAG 2.2 AA; the [development checklist](../../rules/development-chec
 - Import a package's specific entry point (`@noble/hashes/sha3.js`, not the package root), so the
   bundle carries only what the page uses.
 - Measure client JavaScript with `npx next analyze --output`, which writes
-  `.next/diagnostics/analyze`: copy that report before and after a change that adds a client
-  component or a dependency, and compare.
+  `.next/diagnostics/analyze`: copy that report into a run directory under
+  `agents/.processes/dev-runs/` before and after a change that adds a client component or a
+  dependency, and compare.
 - Reserve the space of everything that renders late; the simulated panels render their first
   frame on the server at their final size.
 
