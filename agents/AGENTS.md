@@ -79,9 +79,9 @@ Run from the repo root, with Node.js from `.nvmrc` and npm:
   Vercel settings, environment variables, domains, or DNS, and never trigger a deploy, without the
   owner's explicit approval for that action ([no-deploy](rules/no-deploy.md)).
 - **Statically rendered, with no backend.** Every route prerenders at build time; nothing may make a
-  route dynamic or add a route handler (`route.ts`), server action, or proxy without the owner's
-  approval. Metadata routes (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are fine while
-  they stay static.
+  route dynamic or add a route handler (`route.ts`), server action, or proxy (`proxy.ts`, or the
+  deprecated `middleware.ts`) without the owner's approval. Metadata routes (`robots.ts`,
+  `sitemap.ts`, `manifest.ts`, image routes) are fine while they stay static.
 - **Copy follows the engine.** Every claim about the engine matches the engine's README and its
   decision issues; `src/lib/content.ts` holds its rules and status as the page states them.
 - **Private by construction.** No analytics, cookies, browser storage, trackers, third-party

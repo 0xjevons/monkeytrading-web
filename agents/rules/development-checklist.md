@@ -104,8 +104,8 @@ When: components, hooks, anything under `src/app/`, `next.config.ts`.
   or `● (SSG)` with `dynamicParams = false` so no unlisted path renders on demand — with no
   request-time API (`cookies()`, `headers()`, `connection()`, `searchParams`, uncached `fetch`)
   and no `dynamic` export?
-- Does the change add a route handler (`route.ts`), server action, `proxy.ts`, or `next/script`
-  tag? Each needs the owner's approval first: the site has no backend. Metadata routes
+- Does the change add a route handler (`route.ts`), server action, `proxy.ts` (or the deprecated
+  `middleware.ts`), or `next/script` tag? Each needs the owner's approval first: the site has no backend. Metadata routes
   (`robots.ts`, `sitemap.ts`, `manifest.ts`, image routes) are fine while they stay static.
 
 ## 5. Simulations and engine rules

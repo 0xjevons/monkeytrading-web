@@ -239,11 +239,14 @@ and report the failure.
 5. Make the approved fixes; ask before anything that widens scope.
 6. Verify the fixes and run the local checks. On a feature PR, a fix that changes the feature's
    behaviour also runs its dev scenario again
-   ([agent-build-feature](../agent-build-feature/SKILL.md#pr-and-merge)).
+   ([agent-build-feature](../agent-build-feature/SKILL.md#pr-and-merge)), here on a local
+   production build, since the fixed head has no preview until it is pushed.
 7. **Print the approval report and wait. Post nothing yet.**
 8. Re-read the PR head, its description, and every thread you will answer; if anything changed,
    re-triage and print a refreshed report.
-9. Commit and push.
+9. Commit and push. Once Vercel is connected, a feature PR whose behaviour changed runs its dev
+   scenario again on the new head's preview deployment, and the user sees the result before the
+   PR merges.
 10. Update the PR description as approved.
 11. Post the approved replies as one review.
 12. Report one line per item with its link: what was done, what was replied, and why anything was

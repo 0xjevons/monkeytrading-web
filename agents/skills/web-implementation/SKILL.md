@@ -163,8 +163,8 @@ in a test file: a test cannot reset it, and a second instance of a component can
   route table after every change under `src/app/`.
 - Keep the default build output, never `output: "export"`: a static export drops the `headers()`
   that carry the security headers.
-- No backend: no route handler (`route.ts`), server action (`"use server"`), `proxy.ts`, or runtime
-  data fetching without the owner's approval. Metadata routes (`robots.ts`, `sitemap.ts`,
+- No backend: no route handler (`route.ts`), server action (`"use server"`), `proxy.ts` (or the
+  deprecated `middleware.ts`), or runtime data fetching without the owner's approval. Metadata routes (`robots.ts`, `sitemap.ts`,
   `manifest.ts`, image routes) are special route handlers that Next.js prerenders; they are fine
   while the build marks them prerendered.
 - Route files follow the App Router file conventions in `src/app/`: `layout.tsx`, `page.tsx`, and

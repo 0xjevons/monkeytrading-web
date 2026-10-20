@@ -23,7 +23,9 @@ Dev is a production build checked in a browser: a local build (`npm run build`, 
 `npm start -- --port <port>` on a free port) until the repository is connected to Vercel, and the
 PR's preview deployment once it is
 ([no-guessing-current-state](../../rules/no-guessing-current-state.md) says how to tell). A merge
-deploys production, so the dev scenario passes before the PR is marked ready, not after.
+deploys production, so the dev scenario passes before the PR is marked ready, not after. A check
+made before a push, such as on a review fix not yet pushed, runs on a local production build of the
+working tree: a head has no preview until it is pushed.
 
 The scenario's check is a script that drives a browser, so anyone can run it again:
 
