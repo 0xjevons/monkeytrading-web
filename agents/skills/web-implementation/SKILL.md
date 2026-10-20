@@ -77,8 +77,8 @@ input:
   behaves as the engine does: a stale or divergent quote set means no price, not the last price.
 - **Visitor input is untrusted.** Parse it into a typed value at the boundary — the shell turns a
   line into a known command or an error line — bound its length, and render it only as text through
-  React. Never pass it to `eval`, `new Function`, `innerHTML`, `dangerouslySetInnerHTML`, a
-  regular expression, or a URL.
+  React. Never pass it to `eval`, `new Function`, `innerHTML`, or `dangerouslySetInnerHTML`, and
+  never build a `RegExp` or a link target from it.
 - **Bad build input fails the build.** A malformed environment value must stop `next build`
   (`new URL(siteUrl())` throws on a bad `SITE_URL`) rather than ship a wrong canonical URL.
 - **Internal invariants — states our own code cannot produce without a bug → throw an `Error`.**
@@ -203,9 +203,10 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - `poweredByHeader: false`.
 - Never widen the CSP with a wildcard, a scheme source such as `https:`, or another origin. A new
   origin is a privacy change and needs the owner's approval first ([Privacy](#privacy)).
-- Read the headers from the production build, not only the config: `npm run build && npm start`,
-  then `curl -sI http://localhost:3000/`. On a deployment, read the deployed response too; the
-  host can add headers of its own.
+- Read the headers from the production build, not only the config: `npm run build`, then
+  `npm start -- --port <port>` on a free port (`next start` exits rather than move when the port
+  is taken), then `curl -sI http://localhost:<port>/` once its log says it listens there. On a
+  deployment, read the deployed response too; the host can add headers of its own.
 - `dangerouslySetInnerHTML` only for JSON-LD built from constants at build time, with every `<`
   escaped as `\u003c` (`JSON.stringify(data).replace(/</g, "\\u003c")`), so no value can close
   the script element; never for anything a visitor or the environment supplies.
@@ -302,7 +303,8 @@ The bar is WCAG 2.2 AA; the [development checklist](../../rules/development-chec
 - Budgets, on a production build: Lighthouse in its mobile configuration scores 95 or more in
   Performance, Accessibility, Best Practices, and SEO, with LCP at most 2.5 s, CLS at most 0.1, and
   Total Blocking Time at most 200 ms. Run Lighthouse from outside the repository at an exact
-  version (`npm view lighthouse version`) against `npm start`, and keep its JSON report in the run
+  version (`npm view lighthouse version`) against the port `npm start` reports, and keep its JSON
+  report in the run
   directory.
 - Client components stay small: logic lives in `src/lib`, server components render everything
   static, and a client component holds only what changes.
@@ -335,8 +337,9 @@ rules; these are the conventions that keep copy checkable.
   issues there. Prose elsewhere that describes the engine is checked the same way.
 - A rule the page demonstrates in code (the index median, the state roots) cites the engine source
   it mirrors in a comment.
-- Something the engine has not built is marked `building: true`, which the page shows as in build;
-  the mark comes off only when the engine README says it is built.
+- Something the engine has not built is marked as in build — `building: true` on a rule,
+  `state: "building"` on a status item — and both marks for the same piece change together, only
+  when the engine README says it is built.
 - When the engine README changes, re-check `content.ts` and the page's prose against it.
 
 ## Dependencies
@@ -407,7 +410,8 @@ Import groups appear in this order, separated by a blank line.
 - `src/components/` holds one exported component per file, named like the file in PascalCase
   (`IndexPanel.tsx` exports `IndexPanel`). A small component used only by that file may sit below
   its export, as `page.tsx` keeps `Hero` and `Section`. Hooks shared across components live in a
-  lowercase module (`motion.tsx`).
+  lowercase module, which may also export the control those hooks drive, as `motion.tsx` does with
+  `MotionToggle`.
 - `src/lib` modules are kebab-case (`price-index.ts`, `replay-log.ts`), with tests beside them as
   `<module>.test.ts`.
 - `.tsx` only for files that hold JSX.

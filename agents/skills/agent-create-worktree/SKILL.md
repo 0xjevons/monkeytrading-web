@@ -89,8 +89,10 @@ fi
 ```
 
 The repo has no submodules. A new worktree has no `node_modules/` or `.next/` of its own: run
-`npm ci` in it before any script, and run its first build in the background. `next dev` takes
-port 3000 by default, so a second tree's dev server needs another (`npm run dev -- --port 3001`).
+`npm ci` in it before any script, and run its first build in the background. Servers default to
+port 3000: `next dev` moves to the next free port when 3000 is taken, but `next start` exits, so
+serve a second tree's production build on a free port (`npm start -- --port <port>`) and point
+every check at the port its log reports.
 
 Report the path and how to enter it: `cd "$WT_PATH"`.
 

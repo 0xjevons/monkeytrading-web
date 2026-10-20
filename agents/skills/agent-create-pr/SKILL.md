@@ -125,11 +125,13 @@ After the merge, still in the main checkout, the session cleans up the PR's head
   merged PR's head branch itself, and `ls-remote` exits 2 when it has.
 
   ```bash
-  git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; found=$?
+  remote_branch() { git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; }
+  found=0; remote_branch || found=$?
   if [ "$found" -eq 0 ]; then
-    git push --force-with-lease="refs/heads/$BRANCH:$SHA" origin --delete "$BRANCH"
+    git push --force-with-lease="refs/heads/$BRANCH:$SHA" origin --delete "$BRANCH" \
+      || { found=0; remote_branch || found=$?; [ "$found" -eq 2 ]; }  # deleted meanwhile: done
   elif [ "$found" -ne 2 ]; then
-    echo "cannot read origin's branches — stop"
+    echo "cannot read origin's branches — stop"; exit 1
   fi
   ```
 - **Locally**, only while the branch points at `$SHA`: `git worktree remove` on the linked worktree

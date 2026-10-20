@@ -24,7 +24,8 @@ current action.
   `*.test.ts` beside them: `price-index.ts` (the engine's index rule and its seeded simulation), `replay.ts` and
   `replay-log.ts` (the demo's state machine, published log, and tampers), `tape.ts`, `shell.ts`,
   `format.ts`, and `prng.ts`; `content.ts` (the engine's rules and status as the page states them);
-  and `site.ts` (links, contact, and `siteUrl()`, the one reader of `process.env`).
+  and `site.ts` (links, contact, and `siteUrl()`, the one reader of the site's environment
+  variables).
 - **next.config.ts** — the security headers on every path (a CSP without nonces, nosniff, referrer,
   frame, opener, and permissions policies), `reactStrictMode`, `poweredByHeader: false`, and
   `agentRules: false`, so `next dev` leaves this index alone.
@@ -57,9 +58,11 @@ Run from the repo root, with Node.js from `.nvmrc` and npm:
 - Lint: `npm run lint`
 - Typecheck: `npm run typecheck` (`next typegen`, then `tsc --noEmit`)
 - Unit tests: `npm test`; one file: `npm test -- src/lib/replay.test.ts`
-- Build: `npm run build`; serve the production build: `npm start` (`http://localhost:3000`)
-- Security headers of the production build: `curl -sI http://localhost:3000/` while `npm start`
-  runs
+- Build: `npm run build`; serve the production build: `npm start` (`http://localhost:3000`), or
+  `npm start -- --port <port>` when 3000 is taken — `next dev` moves to the next free port, but
+  `next start` exits
+- Security headers of the production build: `curl -sI http://localhost:<port>/` on the port the
+  `npm start` log reports
 - Client bundle analysis: `npx next analyze --output` (writes `.next/diagnostics/analyze`)
 - Supply chain: `npm audit --audit-level=high`
 
@@ -96,6 +99,10 @@ Load a rule body only when its load hint matches the next concrete action. Do no
 [development-checklist](rules/development-checklist.md), and the `*-implementation` skill for the
 files you touch. Keep the checklist applied the whole way — designing, writing code and tests,
 self-review, opening the PR, and reviewing — not only at the end.
+
+**Public copy.** Before writing text a visitor or a crawler reads — the page, metadata, image and
+alt text, the README — load [writing-style](rules/writing-style.md) and the Public copy section of
+[development-checklist](rules/development-checklist.md), even when no code changes.
 
 ### Rules
 

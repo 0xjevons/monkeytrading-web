@@ -163,8 +163,9 @@ fonts, images, dependencies, `next.config.ts`.
   `npx next analyze --output` before and after?
 - Does every element reserve its space before it renders — images sized, fonts through `next/font`,
   simulated panels at their first frame — so nothing shifts the layout?
-- Does every animation run on `transform` and `opacity`, never on layout properties, and does every
-  timer or frame loop stop while paused, off screen, or in a hidden tab?
+- Does every animation run on `transform` and `opacity` — paint-only properties such as
+  `background-color` and `box-shadow` at most on small elements — never on layout properties, and
+  does every timer or frame loop stop while paused, off screen, or in a hidden tab?
 - Can anything grow without bound while the page stays open — a history, a log, a list of rows?
 
 ## 8. Security

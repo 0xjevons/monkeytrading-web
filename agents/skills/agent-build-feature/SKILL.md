@@ -25,6 +25,11 @@ deploys production, so the dev scenario passes before the PR is marked ready, no
 
 The scenario's check is a script that drives a browser, so anyone can run it again:
 
+- Serve a local build with `npm start -- --port <port>` on a free port, and point the script at
+  that port only once the server's log says it listens there. `next start` exits when its port is
+  taken, so a request to the default port could reach another server, such as a dev server, and
+  judge the wrong build.
+
 - Use Playwright from a scratch directory outside the repository, at an exact version of the
   official `playwright` package (`npm view playwright version`); it never becomes a dependency of
   this repo. Run the script from beside that install so its imports resolve.
@@ -102,7 +107,8 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 - The merge is the promotion: it deploys production once Vercel is connected, and it happens only
   on the owner's go-ahead, as [agent-create-pr](../agent-create-pr/SKILL.md#merging) describes.
 - After merge, run the dev scenario on `main`: against the production deployment once Vercel is
-  connected — reading a page is not a deploy — or on a local production build of `main` until then.
+  connected and reports that deployment of the merge commit as ready — reading a page is not a
+  deploy — or on a local production build of `main` until then.
   Show the user the result, and on their yes record it on the issue and close it.
 
 ## Rules
