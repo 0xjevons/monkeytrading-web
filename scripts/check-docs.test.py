@@ -71,9 +71,67 @@ Prose with ``` inside opens no fence, so [after prose](rules/a.md) counts.
 > ~~~
 > [fenced in a quote](missing.md)
 > ~~~
+
+```
+> [quoted in a fence](missing.md)
+```
+
+> [quoted label]: rules/a.md
+
+- [listed label]: rules/a.md
+- Run `one.
+- Read [tight](rules/a.md) and run `two`.
+
+A lone ` backtick.
+# A heading with [heading link](rules/a.md) and `code`
+
+- ```sh
+  [list fence left open](missing.md)
+
+[after the list fence](rules/a.md)
+
+> ```sh
+> [quote fence left open](missing.md)
+
+[after the quote fence](rules/a.md)
+
+Prose ends where a fence begins:
+~~~
+[interrupting fence](missing.md)
+~~~
+
+- A list item ends where a block quote starts.
+> ```
+> [quoted fence after a list](missing.md)
+> ```
+
+[angle label]: <rules/b c.md>
+[single](rules/a.md 'Title') has a single-quoted title.
+
+1. ```sh
+   [ordered fence](missing.md)
+   ```
+
+- a
+  - b
+
+    ```
+    [nested list fence](missing.md)
+    ```
+
+Top-level text ends the lists above.
+
+Text `a
+    - b [deep item](missing.md) c`
+
+Text `a
+    # b [deep heading](missing.md) c`
+
+> Quoted text `a
+lazy` [lazy link](rules/a.md) `b`
 """
 
-# Twenty-nine relative links in six pages: the index's twenty-seven, the README's, and one in a
+# Thirty-eight relative links in six pages: the index's thirty-six, the README's, and one in a
 # page read through its symlink. The ignored and the out-of-scope pages are not read.
 VALID = {
     ".gitignore": "/agents/.processes/\n",
@@ -89,11 +147,11 @@ VALID = {
     "docs/shared.md": "[rule](../agents/rules/a.md)\n",
 }
 VALID_SYMLINKS = {**INDEX_LINKS, "agents/shared.md": "../docs/shared.md"}
-VALID_OUTPUT = "Checked 29 relative links in 6 Markdown files.\n"
+VALID_OUTPUT = "Checked 38 relative links in 6 Markdown files.\n"
 
 
 def broken(where, dest):
-    return f"{where}: {dest} does not resolve to a file in the repository"
+    return f"{where}: {dest} does not resolve to a file or directory in the repository"
 
 
 def unresolved(path):
@@ -199,6 +257,101 @@ FAILURES = {
         [],
         [broken("agents/AGENTS.md:6", "none.md")],
     ),
+    "reference in a block quote": (
+        {"agents/AGENTS.md": "> [Read][rule]\n>\n> [rule]: rules/none.md\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:3", "rules/none.md")],
+    ),
+    "reference in a list item": (
+        {"agents/AGENTS.md": "- [rule]: rules/none.md\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:1", "rules/none.md")],
+    ),
+    "code span across list items": (
+        {"agents/AGENTS.md": "- Run `one.\n- Read [rule](rules/none.md) and run `two`.\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:2", "rules/none.md")],
+    ),
+    "fence ended by its list item": (
+        {"agents/AGENTS.md": "- ~~~\n  code\n\n[rule](rules/none.md)\n\n~~~sh\ncode\n~~~\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:4", "rules/none.md")],
+    ),
+    "fence ended by its block quote": (
+        {"agents/AGENTS.md": "> ```\n> code\n\n[rule](rules/none.md)\n\n```sh\ncode\n```\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:4", "rules/none.md")],
+    ),
+    "reference in a nested list item": (
+        {"agents/AGENTS.md": "- a\n  - b\n\n    [rule]: rules/none.md\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:4", "rules/none.md")],
+    ),
+    "code span across a thematic break": (
+        {"agents/AGENTS.md": "Text `a\n***\n[rule](rules/none.md) b`\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:3", "rules/none.md")],
+    ),
+    "code span stopped by a line of spaces": (
+        {"agents/AGENTS.md": "A stray ` backtick.\n   \n[rule](rules/none.md) and a later `.\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:3", "rules/none.md")],
+    ),
+    "code span past a heading": (
+        {"agents/AGENTS.md": "# Heading `a\n[rule](rules/none.md) b`\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:2", "rules/none.md")],
+    ),
+    "angle-bracket reference definition": (
+        {"agents/AGENTS.md": "[label]: <rules/x none.md>\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:1", "<rules/x none.md>")],
+    ),
+    "closing fence indented four columns": (
+        {
+            "agents/AGENTS.md": (
+                "```md\n- item\n\n    ```sh\n    code\n    ```\n```\n\n"
+                "[rule](rules/none.md)\n\n```sh\nx\n```\n"
+            )
+        },
+        {},
+        [],
+        [broken("agents/AGENTS.md:9", "rules/none.md")],
+    ),
+    "opening fence indented four columns": (
+        {"agents/AGENTS.md": "Text\n\n    ```\n[rule](rules/none.md)\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:4", "rules/none.md")],
+    ),
+    "indented code line ended by an unindented line": (
+        {"agents/AGENTS.md": "Text.\n\n    code `a\n[rule](rules/none.md) b`\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:4", "rules/none.md")],
+    ),
+    "block quote interrupting a paragraph": (
+        {"agents/AGENTS.md": "Text `a\n> [quoted](rules/none.md) b`\n"},
+        {},
+        [],
+        [broken("agents/AGENTS.md:2", "rules/none.md")],
+    ),
+    "unknown link scheme": (
+        {"agents/AGENTS.md": "[severity](severity.md:5)\n"},
+        {},
+        [],
+        ["agents/AGENTS.md:1: severity.md:5 is not a web, mail, or relative link"],
+    ),
     "fence that never closes": (
         {"agents/AGENTS.md": "# Index\n\n```sh\n[code](none.md)\n"},
         {},
@@ -254,6 +407,12 @@ FAILURES = {
         {"agents/self.svg": "self.svg", "agents/a.svg": "b.svg", "agents/b.svg": "a.svg"},
         [],
         [broken("agents/AGENTS.md:1", "self.svg"), broken("agents/AGENTS.md:2", "a.svg")],
+    ),
+    "link through a symlinked directory": (
+        {"agents/AGENTS.md": "[guide](shared/guide.md)\n", "docs/guide.md": ""},
+        {"agents/shared": "../docs"},
+        [],
+        [broken("agents/AGENTS.md:1", "shared/guide.md")],
     ),
     "page symlink cycle": (
         {"LICENSE": ""},
