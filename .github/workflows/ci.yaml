@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Lints the workflows with actionlint, which also runs the runner's shellcheck over each `run:`
+  # script. The release archive is pinned by the SHA-256 in its release's checksums file.
+  workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install actionlint
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          release="https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION"
+          curl -fsSL -o "$archive" "$release/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "$ACTIONLINT_SHA256  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+      - name: Lint workflows
+        run: |
+          "$RUNNER_TEMP/actionlint"
+
+  # Checks that every relative Markdown link under agents/ and in the root *.md files resolves to
+  # a file in the repository, and that AGENTS.md and CLAUDE.md are symlinks to agents/AGENTS.md.
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test the docs check
+        run: python3 scripts/check-docs.test.py
+      - name: Check docs
+        run: python3 scripts/check-docs.py
+
+  # The one check branch rules require: it passes only when every job above succeeded, so each new
+  # job must be added to `needs`.
+  ci-passed:
+    if: always()
+    needs: [workflows, docs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          echo "$RESULTS" | jq -e 'length > 0 and all(. == "success")'
