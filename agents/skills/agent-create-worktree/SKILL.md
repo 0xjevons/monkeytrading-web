@@ -3,17 +3,17 @@ name: agent-create-worktree
 description: >
   Use when starting isolated work on a repo in this workspace and you want it on a separate git
   worktree instead of the main checkout — "create a worktree", "spin up a working tree", "give me
-  a worktree for <branch>", "isolate this on its own tree". Puts the worktree under the repo's
-  sibling `<repo>-worktrees/` directory, named after the branch, and checks out or creates the
-  branch — or, to review a PR, a detached tree at its head.
+  a worktree for <branch>", "isolate this on its own tree". Puts the worktree under the sibling
+  `web-worktrees/` directory, named after the branch, and checks out or creates the branch — or,
+  to review a PR, a detached tree at its head.
 ---
 
 # agent-create-worktree
 
 Create a git worktree in a predictable place with a predictable name, so several branches of one
-repo can be checked out side by side without disturbing the main checkout. Every worktree for a
-repo lives under one sibling directory, `<workspace>/<repo>-worktrees/` (for this repo,
-`web-worktrees/`), never inside the repo.
+repo can be checked out side by side without disturbing the main checkout. Every worktree for
+this repo lives under one directory beside the main checkout, `<workspace>/web-worktrees/`, never
+inside the repo.
 
 Not needed when you only edit the branch you are already on — work in place.
 
@@ -41,7 +41,7 @@ with every `/` replaced by `-`, so the prefix is kept and nothing nests.
 ```bash
 # Main checkout, even when run from inside another worktree.
 REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-WT_ROOT="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees"
+WT_ROOT="$(dirname "$REPO_ROOT")/web-worktrees"
 mkdir -p "$WT_ROOT"
 git -C "$REPO_ROOT" fetch origin --quiet
 ```
@@ -103,7 +103,7 @@ git -C "$REPO_ROOT" worktree prune
 
 ## Guardrails
 
-- Worktrees go in the sibling `<repo>-worktrees/`, never inside the repo. Build the path from the
+- Worktrees go in the sibling `web-worktrees/`, never inside the repo. Build the path from the
   main checkout as above; never pass a relative path to `git worktree add`.
 - A PR's worktree keeps the PR's head branch name: attached for editing, in the directory name for
   review.

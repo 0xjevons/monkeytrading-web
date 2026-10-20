@@ -121,8 +121,17 @@ After the merge, still in the main checkout, the session cleans up the PR's head
 (`headRefName`, here `$BRANCH`):
 
 - **On `origin`**, only for a PR from this repository (`isCrossRepository` is false), with a lease
-  on the approved commit:
-  `git push --force-with-lease="refs/heads/$BRANCH:$SHA" origin --delete "$BRANCH"`.
+  on the approved commit, and only while the branch is still there: this repository deletes a
+  merged PR's head branch itself, and `ls-remote` exits 2 when it has.
+
+  ```bash
+  git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; found=$?
+  if [ "$found" -eq 0 ]; then
+    git push --force-with-lease="refs/heads/$BRANCH:$SHA" origin --delete "$BRANCH"
+  elif [ "$found" -ne 2 ]; then
+    echo "cannot read origin's branches — stop"
+  fi
+  ```
 - **Locally**, only while the branch points at `$SHA`: `git worktree remove` on the linked worktree
   that has it checked out, or `git switch main` when the main checkout has it, then
   `git branch -D "$BRANCH"`. A branch with commits after `$SHA` keeps its worktree, and the session

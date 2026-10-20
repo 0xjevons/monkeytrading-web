@@ -20,8 +20,8 @@ current action.
   `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); `Header`, `Footer`, and
   `Logo`; and `motion.tsx` (the one pause / play switch for every animation, off under
   `prefers-reduced-motion`, and a ticker that stops off screen).
-- **src/lib/** — pure TypeScript with no React or DOM, unit-tested by a `*.test.ts` beside each
-  module: `price-index.ts` (the engine's index rule and its seeded simulation), `replay.ts` and
+- **src/lib/** — pure TypeScript with no React or DOM; modules with logic are unit-tested by a
+  `*.test.ts` beside them: `price-index.ts` (the engine's index rule and its seeded simulation), `replay.ts` and
   `replay-log.ts` (the demo's state machine, published log, and tampers), `tape.ts`, `shell.ts`,
   `format.ts`, and `prng.ts`; `content.ts` (the engine's rules and status as the page states them);
   and `site.ts` (links, contact, and `siteUrl()`, the one reader of `process.env`).

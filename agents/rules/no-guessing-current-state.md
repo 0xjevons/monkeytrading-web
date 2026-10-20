@@ -6,7 +6,7 @@ Load on request when a task depends on state that may have changed since the las
 
 - Check GitHub PRs, CI, reviews, branches, deploys, packages, Vercel deployments, model catalogs, and external docs from their current source.
 - Use local git / repo files for local state; use GitHub, CI, and the deployed site itself (its pages and response headers) for remote state.
-- Whether Vercel is connected is live state: it is connected once Vercel reports a status or a deployment on a commit (`gh pr checks`, or `gh api "repos/{owner}/{repo}/deployments"`).
+- Whether Vercel is connected is live state. Count it as connected only when Vercel reports a status on the commit in question (`gh pr checks <pr>`, or `gh api "repos/{owner}/{repo}/commits/<sha>/status"`); a deployment of an older commit does not prove it. Without that evidence, say the connection is unverified and use the local production build.
 - Quote the command, source, PR, commit, run, or file that established the state.
 - If current state cannot be checked, say what is unverified and avoid merge / deploy / release claims.
 - Memory can suggest where to look; it is not proof of current state.

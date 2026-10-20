@@ -169,7 +169,8 @@ in a test file: a test cannot reset it, and a second instance of a component can
   `<a>` with `target="_blank"` and `rel="noopener noreferrer"` for external links.
 - Raster images go through `next/image` with a static import or an explicit `width` and `height`,
   and an `alt`. Decorative inline SVG carries `aria-hidden="true"`.
-- No `next/script`, and no third-party script by any route ([Privacy](#privacy)).
+- No `next/script` and no third-party script without the owner's approval
+  ([Privacy](#privacy)).
 
 ## Metadata and Open Graph images
 
@@ -196,15 +197,18 @@ in a test file: a test cannot reset it, and a second instance of a component can
   `'unsafe-inline'` covers them, and the policy allows nothing from another origin.
 - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
   `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`, and a `Permissions-Policy`
-  that turns off every feature the page does not use.
+  that turns off `camera`, `microphone`, `geolocation`, `payment`, `usb`, and `browsing-topics`.
+  Add a feature to that list only once browsers recognise it, since an unknown one logs a console
+  error.
 - `poweredByHeader: false`.
 - Never widen the CSP with a wildcard, a scheme source such as `https:`, or another origin. A new
   origin is a privacy change and needs the owner's approval first ([Privacy](#privacy)).
 - Read the headers from the production build, not only the config: `npm run build && npm start`,
   then `curl -sI http://localhost:3000/`. On a deployment, read the deployed response too; the
   host can add headers of its own.
-- `dangerouslySetInnerHTML` only for JSON-LD built from constants at build time, with `<` escaped
-  as `<`; never for anything a visitor or the environment supplies.
+- `dangerouslySetInnerHTML` only for JSON-LD built from constants at build time, with every `<`
+  escaped as `\u003c` (`JSON.stringify(data).replace(/</g, "\\u003c")`), so no value can close
+  the script element; never for anything a visitor or the environment supplies.
 
 ## Configuration and environment
 
@@ -214,8 +218,9 @@ in a test file: a test cannot reset it, and a second instance of a component can
 - A new variable needs a safe default or a build that fails without it, a line in the README's
   deployment section, and the owner to set it at Vercel; agents never set it
   ([no-deploy](../../rules/no-deploy.md)).
-- Only `NEXT_PUBLIC_*` variables reach the browser, and everything in them is public; never put
-  anything secret in one.
+- From the environment, only `NEXT_PUBLIC_*` variables and `NODE_ENV` reach the browser, and
+  everything in them is public; never put anything secret in one. `next.config.ts` has no `env`
+  key: values set there ship to the client whatever their names.
 - No `.env` file is committed (`.env*` is gitignored), and none is needed to build or run the site.
 - **Classify every new constant.** Claims about the engine go in `src/lib/content.ts`; links,
   contact, and site identity in `src/lib/site.ts`; a simulation's parameters beside that
@@ -248,9 +253,10 @@ in a test file: a test cannot reset it, and a second instance of a component can
   them from the site's own origin, and `next/font/local` serves files committed to the repository.
   Never a `<link>` or `@import` to a font host: `font-src 'self'` blocks it, and it would send every
   visitor's address to a third party.
-- Each font sets `variable` (read by a `--font-*` token in `@theme`), `subsets: ["latin"]`, and
-  `display: "swap"`, and loads only the weights and styles the page uses. A font used once or
-  below the fold sets `preload: false`.
+- Each font sets `variable` (read by a `--font-*` token in `@theme`) and `display: "swap"`, and
+  loads only the weights and styles the page uses; a `next/font/google` font also sets
+  `subsets: ["latin"]` (`next/font/local` has no such option). A font used once or below the fold
+  sets `preload: false`.
 
 ## Accessibility
 
@@ -261,7 +267,8 @@ The bar is WCAG 2.2 AA; the [development checklist](../../rules/development-chec
   is a skip link to `#main`, and `main` takes `tabIndex={-1}` so the link can move focus to it.
 - One `h1`; each section has a heading, and headings nest without skipping a level.
 - Focus is visible on every interactive element through a `focus-visible:` style. An outline is
-  removed only where a replacement indicator shows, or on `main` as a programmatic focus target.
+  removed only where a replacement indicator shows, or on a programmatic focus target
+  (`tabIndex={-1}`) that is not interactive, such as `main` and the sections the header links to.
 - Every input has a `<label>`. A control whose visible text does not say what it does gets an
   `aria-label` that starts with that visible text (WCAG 2.5.3).
 - Text that changes many times a second — prices, roots, the tape — is `aria-hidden`, beside a
@@ -369,7 +376,8 @@ rules; these are the conventions that keep copy checkable.
 ## Testing
 
 - Vitest runs every `src/**/*.test.ts` in the Node environment (`vitest.config.ts`). Each `src/lib`
-  module has its tests beside it as `<module>.test.ts`.
+  module with logic has its tests beside it as `<module>.test.ts`; a module that only holds data,
+  such as `content.ts`, needs none.
 - Test the logic, not the framework: components stay thin, so their logic sits in `src/lib` and is
   tested there. There are no DOM or component tests; adding them is a dependency decision.
   Behavior only a browser shows is checked on a production build through the dev scenario

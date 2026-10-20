@@ -27,15 +27,16 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 
 - Use Playwright from a scratch directory outside the repository, at an exact version of the
   official `playwright` package (`npm view playwright version`); it never becomes a dependency of
-  this repo. Keep the script beside that install so its imports resolve.
-- Write the run's output — the script, screenshots, and results — to the gitignored
-  `agents/.processes/dev-runs/<YYYY-MM-DD-HHMM>-<kebab-slug>/`.
+  this repo. Run the script from beside that install so its imports resolve.
+- Keep the run's record — a copy of the script, its screenshots, and its results — in the
+  gitignored `agents/.processes/dev-runs/<YYYY-MM-DD-HHMM>-<kebab-slug>/`.
 - Drive the page the way a visitor does: by role and accessible name (`getByRole`), with the
   keyboard where the scenario says so, and at the mobile and desktop widths it names.
 - When the change alters what the page loads or renders, run Lighthouse in its mobile
   configuration on the same build, as
   [web-implementation](../web-implementation/SKILL.md#performance) describes, and keep its report
-  in the run directory.
+  in the run directory. When it adds client JavaScript, also compare `npx next analyze --output`
+  before and after, and keep both reports there.
 - When a preview deployment is protected and the run cannot reach it, run the scenario on a local
   production build of the same commit and say so. Never change protection settings
   ([no-deploy](../../rules/no-deploy.md)).

@@ -40,9 +40,9 @@ is done; load it for every code review.
 When: new modules or components, the server and client boundary, content or data sources, new or
 updated dependencies.
 
-- Which module owns each value and each claim? Is there one source of truth — claims about the
-  engine in `src/lib/content.ts`, links and identity in `src/lib/site.ts`, rules mirrored from the
-  engine in their `src/lib` module — or can two copies drift?
+- Which module owns each value and each claim? Is there one source of truth — the engine's rules
+  and status in `src/lib/content.ts`, links and identity in `src/lib/site.ts`, rules mirrored from
+  the engine in their `src/lib` module — or can two copies drift?
 - Trace the data end to end: where it is defined, whether it is computed at build time or in the
   browser, and what crosses from server to client components as props.
 - In the code the change touches, does each layer do only its own job? `src/lib` computes and holds
@@ -82,9 +82,11 @@ When: components, hooks, anything under `src/app/`, `next.config.ts`.
 - Is each component a server component unless it needs state, effects, event handlers, or a
   browser API? Is `"use client"` on the smallest component that needs it, never on a page or
   layout, and are the props crossing that boundary plain serializable data?
-- Does code that runs in the browser read no `process.env` value but a `NEXT_PUBLIC_*` one? Next.js
-  inlines only those into client bundles, so any other read there is `undefined`: a function that
-  reads one, such as `siteUrl()`, is called only from server files.
+- Does code that runs in the browser read no `process.env` value but a `NEXT_PUBLIC_*` one or
+  `NODE_ENV`? Next.js inlines only those into client bundles from the environment, so any other
+  read there is `undefined`: a function that reads one, such as `siteUrl()`, is called only from
+  server files. Is `next.config.ts` free of an `env` key, which ships its values to the client
+  whatever their names?
 - Does the first client render match the server HTML? Nothing in render reads the clock,
   randomness, `window`, `document`, or locale- and timezone-dependent formatting; browser-only
   values arrive through `useSyncExternalStore` with a server snapshot. A hydration warning in the
@@ -112,9 +114,9 @@ during the build.
 - Is every rule the page demonstrates (the index median, freshness and divergence checks,
   rounding, state roots) the engine's rule as its README or code states it, with its source cited
   in a comment?
-- Are values that mirror engine state — prices, amounts, basis points — integers in the engine's
-  units with the engine's rounding (truncation toward zero), never floats? Floats are for layout
-  and animation only.
+- Are values that mirror engine state — prices, amounts, basis points — integers in a stated unit
+  (cents, thousandths, basis points) with the engine's rounding (truncation toward zero), never
+  floats? Floats are for layout and animation only.
 - Is every simulation seeded, with time taken from its tick count, never the wall clock, so the
   server-rendered first frame, the client's first frame, and the tests agree?
 - Is hashing from `@noble/hashes`, never home-rolled?
@@ -177,8 +179,8 @@ When: `next.config.ts`, visitor input, links, environment variables, anything th
 - Is visitor input — shell commands, replay edits, the URL — parsed into typed values, rejected with
   a visible message when it does not parse, and rendered only as text? Nothing reaches `eval`,
   `new Function`, `innerHTML`, or `dangerouslySetInnerHTML`.
-- Does every link that opens a new tab carry `rel="noopener noreferrer"`, and is every external URL
-  `https:`, with no `javascript:` URL anywhere?
+- Does every link that opens a new tab carry `rel="noopener noreferrer"`, is every link to another
+  site `https:` (a `mailto:` link aside), and is there no `javascript:` URL anywhere?
 - Is all crypto from vetted libraries, never home-rolled?
 
 ## 9. Privacy
@@ -187,9 +189,8 @@ When: anything that makes a request, stores data in the browser, or adds a scrip
 iframe, or embed.
 
 - Does the change add analytics (Vercel Web Analytics and Speed Insights included), cookies,
-  `localStorage`,
-  `sessionStorage`, IndexedDB, trackers, fingerprinting, third-party scripts, fonts, images, or
-  embeds? Each needs the owner's explicit approval first.
+  `localStorage`, `sessionStorage`, IndexedDB, trackers, fingerprinting, third-party scripts,
+  fonts, images, or embeds? Each needs the owner's explicit approval first.
 - Does the production build make any request to another origin while a visitor uses it? Check the
   browser's network panel: every request is same-origin.
 - Does anything a visitor types or does leave the browser? It must not.
@@ -229,8 +230,8 @@ README.
 - Does every claim about the engine — what it does, its rules, its status — match the engine's
   README on `main` in `0xjevons/monkeytrading` and the decision issues there that settle it? Is
   anything not yet built marked as in build?
-- Does `src/lib/content.ts` hold every such claim, and was it re-checked against the engine README
-  when that changed?
+- Does `src/lib/content.ts` hold the engine's rules and status as the page lists them, and was
+  every claim — there and in other copy — re-checked against the engine README when that changed?
 - Does the copy state the project's status as the engine README does, implying nothing is live or
   holds real funds before it does?
 - Does it name no competitor and no product the design is compared with or modelled on — brokers,
@@ -287,8 +288,8 @@ Vercel.
 - **Regression.** A bug fix carries a test that fails without the fix.
 - **Not weakened.** A deleted, skipped (`.skip`, `.todo`), or focused (`.only`) test, a loosened
   assertion, or a widened tolerance is a defect unless the PR justifies it.
-- **Realistic data.** Values mirroring the engine use its units and precision; fixtures match real
-  shapes.
+- **Realistic data.** Values mirroring the engine use their stated units and the engine's
+  rounding; fixtures match real shapes.
 - **Actually runs.** The tests sit under `src/` as `*.test.ts`, the pattern `vitest.config.ts`
   includes and CI runs.
 
