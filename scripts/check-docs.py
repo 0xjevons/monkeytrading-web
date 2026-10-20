@@ -10,12 +10,11 @@ at that path; a link through a symlinked directory fails, since git lists the sy
 files it leads to. A link starting with `/` resolves from the repository root, as GitHub renders
 it. Anchors are not checked.
 
-Each page is split into Markdown's blocks (paragraphs, list items, block quotes, headings), and
-links are read within a block. Links in fenced code blocks and code spans are skipped. An indented
-code block reads as prose, line by line, so an example link belongs in a fenced block. Markdown
-the check cannot read fails it rather than being skipped: a `](` outside every link it
-recognizes, a link with a scheme other than http, https, or mailto, and a code fence that never
-closes.
+Only fenced code blocks are skipped, found as Markdown finds them, inside block quotes and list
+items. Everything else reads as prose, inline code and indented code included, so an example link
+belongs in a fenced block. HTML links are not checked. Markdown the check cannot read fails it
+rather than being skipped: a `](` outside every link it recognizes, a link with a scheme other
+than http, https, or mailto, and a code fence that never closes.
 
 Run from anywhere in the repository. Prints a summary and exits 0, or lists every failure on
 stderr and exits 1.
@@ -23,6 +22,7 @@ stderr and exits 1.
 
 import os
 import re
+import string
 import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
@@ -33,18 +33,15 @@ TARGET = "file or directory in the repository"
 # Links that leave the repository; any other scheme fails the check.
 SCHEMES = ("http", "https", "mailto")
 
-# Block structure, matched on a line once its tabs are expanded.
-QUOTE_MARKER = re.compile(r"[ \t]*>[ \t]?")
-LIST_ITEM = re.compile(r"[ \t]*(?:[-+*]|\d{1,9}[.)])(?:[ \t]+|$)")
-# Thematic breaks and setext heading underlines.
-BREAK = re.compile(r"[ \t]*(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|=+[ \t]*)$")
-HEADING = re.compile(r"[ \t]*#{1,6}(?:[ \t]|$)")
-# A backtick fence's info string holds no backtick.
-FENCE = re.compile(r"[ \t]*(`{3,}(?!.*`)|~{3,})")
-BACKTICKS = re.compile(r"`+")
+# Block structure, matched on a line once its tabs are expanded. Each opens with at most three
+# spaces of indentation; a backtick fence's info string holds no backtick.
+QUOTE_MARKER = re.compile(r" {0,3}>[ \t]?")
+LIST_ITEM = re.compile(r" {0,3}(?:[-+*]|\d{1,9}[.)])(?:[ \t]+|$)")
+BREAK = re.compile(r" {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$")
+FENCE = re.compile(r" {0,3}(`{3,}(?!.*`)|~{3,})")
 # Markdown lets a backslash escape any ASCII punctuation.
-PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
-ESCAPE = re.compile(r"\\([!-/:-@\[-`{-~])")
+PUNCTUATION = frozenset(string.punctuation)
+ESCAPE = re.compile(rf"\\([{re.escape(string.punctuation)}])")
 # Markdown's link syntax, with backslash escapes and one level of nested brackets or parentheses.
 TEXT = r"\[(?:[^\[\]\\]|\\.|\[(?:[^\[\]\\]|\\.)*\])*\]"
 DEST = r"<(?:[^<>\n\\]|\\.)*>|(?:[^\s()\\]|\\.|\((?:[^\s()\\]|\\.)*\))+"
@@ -94,126 +91,102 @@ def indent(text):
     return len(text) - len(text.lstrip(" "))
 
 
-def unquote_line(line, limit=None):
-    """Return the line without its block-quote markers, at most limit of them, and their count."""
-    level, end = 0, 0
-    while level != limit and (marker := QUOTE_MARKER.match(line, end)):
-        level, end = level + 1, marker.end()
-    return line[end:], level
+def enter(containers, line):
+    """Match a line against the open containers, outermost first.
 
-
-def blocks(text):
-    """Split a page into the blocks that hold its prose, leaving out fenced code.
-
-    Returns the blocks as (first line number, text without block-quote and list markers), and the
-    line of a fence that never closes, or None. Indentation counts from the content column of the
-    innermost list item: a fence, heading, or list item opens, and a fence closes, within three
-    columns of it. A fence closes on a closing fence at its block-quote depth, or where its block
-    quote or list item ends.
+    A block quote continues on a line with its marker, and a list item on a blank line or one
+    indented to its content column. Returns how many matched and the rest of the line.
     """
-    found, lines, start = [], [], 0
-    # The open list items' content columns, the block-quote depth, and the open fence as
-    # (marker, depth, column, line).
-    items, depth, fence = [], 0, None
+    for count, container in enumerate(containers):
+        if container == ">":
+            if not (marker := QUOTE_MARKER.match(line)):
+                return count, line
+            line = line[marker.end() :]
+        elif line.strip() and indent(line) < container:
+            return count, line
+        else:
+            line = line[min(container, indent(line)) :]
+    return len(containers), line
 
-    def end_block():
-        if lines:
-            found.append((start, "\n".join(lines)))
-            lines.clear()
 
+def prose(text):
+    """Return the page with fenced code blanked and container markers removed, line for line, and
+    the line of a fence that never closes, or None.
+
+    A fence closes on a closing fence inside its containers, or where one of them ends.
+    """
+    kept, containers, fence, paragraph = [], [], None, False
     for number, line in enumerate(text.expandtabs(4).split("\n"), 1):
+        matched, rest = enter(containers, line)
         if fence:
-            marker, fence_depth, column, _ = fence
-            rest, level = unquote_line(line, fence_depth)
-            if level == fence_depth and (not rest.strip() or indent(rest) >= column):
+            marker, depth, _ = fence
+            if matched >= depth:
                 closing = rest.strip()
-                if (
-                    indent(rest) - column <= 3
-                    and len(closing) >= len(marker)
-                    and closing == marker[0] * len(closing)
-                ):
-                    fence = None
+                if indent(rest) <= 3 and len(closing) >= len(marker):
+                    if closing == marker[0] * len(closing):
+                        fence = None
+                kept.append("")
                 continue
-            fence = None  # its block quote or list item ended
-        rest, level = unquote_line(line)
-        if not rest.strip() or BREAK.match(rest):
-            end_block()
+            fence = None  # one of its containers ended
+        blocks = (QUOTE_MARKER, LIST_ITEM, FENCE, BREAK)
+        starts = any(block.match(rest) for block in blocks)
+        if paragraph and matched < len(containers) and rest.strip() and not starts:
+            kept.append(rest)  # a lazy line continues the open paragraph and its containers
             continue
-        inside = [column for column in items if indent(rest) >= column]
-        shallow = indent(rest) - (inside[-1] if inside else 0) <= 3
-        item = LIST_ITEM.match(rest) if shallow else None
-        starts = item or shallow and (HEADING.match(rest) or FENCE.match(rest))
-        if lines and not starts and level <= depth:
-            lines.append(rest)  # a paragraph's next line, however far indented or quoted
-            continue
-        end_block()
-        depth = level
-        items, content = inside, rest
-        if item:
-            items.append(item.end())
-            content = rest[item.end() :]
-        if shallow and (match := FENCE.match(content)):
-            fence = (match.group(1), depth, items[-1] if items else 0, number)
-        elif not shallow or HEADING.match(content):
-            found.append((number, content))  # a heading, or a line of indented code, read alone
-        elif content.strip():
-            start = number
-            lines.append(content)
-    end_block()
-    return found, fence[3] if fence else None
+        del containers[matched:]
+        while True:
+            if marker := QUOTE_MARKER.match(rest):
+                containers.append(">")
+            elif not BREAK.match(rest) and (marker := LIST_ITEM.match(rest)):
+                containers.append(marker.end())
+            else:
+                break
+            rest = rest[marker.end() :]
+        if match := FENCE.match(rest):
+            fence = (match.group(1), len(containers), number)
+            rest = ""
+        paragraph = bool(rest.strip()) and not BREAK.match(rest)
+        kept.append(rest)
+    return "\n".join(kept), fence[2] if fence else None
 
 
-def blank_code_spans(prose):
-    """Blank code spans in place, keeping line breaks, and find the unescaped `[` and `](`.
-
-    Returns the blanked text with the offsets of each `[` and each `](` outside code spans.
-    """
-    out, opens, closes, i = list(prose), [], [], 0
-    while i < len(prose):
-        char = prose[i]
-        if char == "\\" and prose[i + 1 : i + 2] in PUNCTUATION:
-            i += 2
-            continue
-        if char == "`":
-            run = BACKTICKS.match(prose, i).end() - i
-            end = next(
-                (m.end() for m in BACKTICKS.finditer(prose, i + run) if len(m.group()) == run), None
-            )
-            if end:
-                out[i:end] = ["\n" if c == "\n" else " " for c in prose[i:end]]
-            i = end or i + run
-            continue
-        if char == "[":
+def brackets(text):
+    """Return the offsets of each unescaped `[` and each unescaped `](`."""
+    opens, closes, i = [], [], 0
+    while i < len(text):
+        char = text[i]
+        if char == "\\" and text[i + 1 : i + 2] in PUNCTUATION:
+            i += 1
+        elif char == "[":
             opens.append(i)
-        elif char == "]" and prose[i + 1 : i + 2] == "(":
+        elif char == "]" and text[i + 1 : i + 2] == "(":
             closes.append(i)
         i += 1
-    return "".join(out), opens, closes
+    return opens, closes
 
 
 def parse(text):
     """Return a page's links and problems as (line, destination, problem), in file order."""
-    page_blocks, unclosed = blocks(text)
+    page, unclosed = prose(text)
+    opens, closes = brackets(page)
+    inline = [match for match in (INLINE_LINK.match(page, start) for start in opens) if match]
+
+    def line(offset):
+        return page.count("\n", 0, offset) + 1
+
     found = []
-    for first, block in page_blocks:
-        prose, opens, closes = blank_code_spans(block)
-        inline = [match for match in (INLINE_LINK.match(prose, start) for start in opens) if match]
-
-        def line(offset):
-            return first + prose.count("\n", 0, offset)
-
-        for match in [*inline, *REFERENCE.finditer(prose)]:
-            dest = match.group(1)
-            if url(dest).scheme in ("", *SCHEMES):
-                found.append((line(match.start(1)), dest, None))
-            else:
-                problem = f"{dest} is not a web, mail, or relative link"
-                found.append((line(match.start(1)), None, problem))
-        found += [
-            (line(close), None, "a link the check cannot read")
-            for close in closes
-            if not any(match.start() <= close < match.end() for match in inline)
-        ]
+    for match in [*inline, *REFERENCE.finditer(page)]:
+        dest = match.group(1)
+        if url(dest).scheme in ("", *SCHEMES):
+            found.append((line(match.start(1)), dest, None))
+        else:
+            problem = f"{dest} is not a web, mail, or relative link"
+            found.append((line(match.start(1)), None, problem))
+    found += [
+        (line(close), None, "a link the check cannot read")
+        for close in closes
+        if not any(match.start() <= close < match.end() for match in inline)
+    ]
     if unclosed:
         found.append((unclosed, None, "a code fence that never closes"))
     return sorted(found, key=lambda item: item[0])
