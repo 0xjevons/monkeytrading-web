@@ -1,10 +1,7 @@
 /** Links, contact, and identity for the site, and the canonical origin from the build environment. */
 
-/**
- * The waitlist: every "join" link on the site points here. It is the owner's Telegram link until the
- * waitlist channel exists, when it becomes that channel's t.me URL.
- */
-export const TELEGRAM_URL = "https://t.me/jevons_0x";
+/** The Telegram announcement and waitlist channel: every "join" link on the site points here. */
+export const TELEGRAM_URL = "https://t.me/monkeytrading_ann";
 
 export const GITHUB_URL = "https://github.com/0xjevons/monkeytrading";
 export const X_URL = "https://x.com/0xjevons";
