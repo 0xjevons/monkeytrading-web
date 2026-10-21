@@ -39,10 +39,11 @@ current action.
   root `AGENTS.md` and `CLAUDE.md` are symlinks to `agents/AGENTS.md`; its test is
   `check-docs.test.py`.
 - **.github/workflows/** — `ci.yaml`, on every push to `main` and every PR: the `workflows` job
-  lints the workflows with actionlint, which also runs shellcheck over each `run:` script, and the
-  `docs` job runs `scripts/check-docs.test.py`, then `scripts/check-docs.py`. Actions are pinned by
-  commit SHA. `ci-passed` is the one CI check branch rules require: it passes only when every other
-  job succeeded, so each new job must be added to its `needs`.
+  lints the workflows with actionlint, which also runs shellcheck over each `run:` script; the
+  `docs` job runs `scripts/check-docs.test.py`, then `scripts/check-docs.py`; and the `lint`,
+  `typecheck`, `test`, `build`, and `audit` jobs run the site's checks after `npm ci`. Actions are
+  pinned by commit SHA. `ci-passed` is the one CI check branch rules require: it passes only when
+  every other job succeeded, so each new job must be added to its `needs`.
 - **.nvmrc** — the Node.js version (24) for local runs and CI.
 - **.npmrc** — `save-exact=true`, so every dependency is pinned exactly.
 - **package.json** / **package-lock.json** — scripts and exact-pinned dependencies; the lockfile is
