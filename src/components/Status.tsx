@@ -17,10 +17,11 @@ export function Status() {
           <div className="mt-6 space-y-4 text-sm leading-relaxed text-fg-2">
             <p>
               The engine runs end to end on a single machine, with a mock enclave, mock custody, and simulated prices,
-              or live crypto prices from three venues. Nothing here holds real funds.
+              or live crypto prices from three venues; vault deposits also run against a local chain. Nothing here
+              holds real funds.
             </p>
             <p>
-              On-chain custody, hardware attestation, live prices for other asset classes, and the token are under
+              On-chain withdrawals, hardware attestation, live prices for other asset classes, and the token are under
               construction, in public.
             </p>
           </div>

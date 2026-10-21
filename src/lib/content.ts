@@ -104,9 +104,15 @@ export const STATUS: readonly StatusItem[] = [
     detail: "Currencies, stock indices, commodities, and shares run on simulated prices today.",
   },
   {
-    name: "Custody on Arbitrum One",
+    name: "Vault deposits",
+    state: "running",
+    detail:
+      "USDC deposits to the vault contract, against a local chain, each credited once the batch holding it is posted to Ethereum.",
+  },
+  {
+    name: "Withdrawals on Arbitrum One",
     state: "building",
-    detail: "USDC deposits and withdrawals through the vault contract. Custody is a mock today.",
+    detail: "Withdrawals from the vault contract. The default local node uses mock custody.",
   },
   {
     name: "Hardware attestation",
