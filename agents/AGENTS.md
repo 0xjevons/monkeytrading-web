@@ -34,24 +34,29 @@ current action.
 - **tsconfig.json** — `strict` and `noUncheckedIndexedAccess`; `@/*` maps to `src/*`.
 - **vitest.config.ts** — runs `src/**/*.test.ts` in the Node environment.
 - **postcss.config.mjs** — Tailwind CSS 4 through `@tailwindcss/postcss`.
-- **.github/workflows/** — `ci.yaml`: lint, typecheck, unit tests, build, and
-  `npm audit --audit-level=high`, on every push to `main` and every PR. Actions are pinned by commit
-  SHA. `ci-passed` is the one CI check branch rules require: it passes only when every other job
-  succeeded, so each new job must be added to its `needs`.
+- **scripts/** — `check-docs.py`, run by CI's `docs` job: every relative Markdown link under
+  `agents/` and in the root `*.md` files resolves to a file or directory in the repository, and the
+  root `AGENTS.md` and `CLAUDE.md` are symlinks to `agents/AGENTS.md`; its test is
+  `check-docs.test.py`.
+- **.github/workflows/** — `ci.yaml`, on every push to `main` and every PR: the `workflows` job
+  lints the workflows with actionlint, which also runs shellcheck over each `run:` script, and the
+  `docs` job runs `scripts/check-docs.test.py`, then `scripts/check-docs.py`. Actions are pinned by
+  commit SHA. `ci-passed` is the one CI check branch rules require: it passes only when every other
+  job succeeded, so each new job must be added to its `needs`.
 - **.nvmrc** — the Node.js version (24) for local runs and CI.
 - **.npmrc** — `save-exact=true`, so every dependency is pinned exactly.
 - **package.json** / **package-lock.json** — scripts and exact-pinned dependencies; the lockfile is
   committed, and CI installs from it with `npm ci`.
 - **agents/** — this index, `rules/`, and `skills/`; root `AGENTS.md` / `CLAUDE.md` symlink to
-  `agents/AGENTS.md`. The gitignored `agents/.processes/` holds local runs: reviews, plans, and dev
-  runs.
+  `agents/AGENTS.md`. The gitignored `agents/.processes/` holds local runs — reviews, plans, and dev
+  runs — and, in the main checkout, each PR branch's fix notes.
 - **README.md** — the public introduction: what the site is, how to run it, and how it deploys.
   Keep its commands and deployment notes in step with `package.json` and `siteUrl()`.
 - **LICENSE** — Apache License 2.0.
 
 ## Commands
 
-Run from the repo root, with Node.js from `.nvmrc` and npm:
+Run from the repo root, with Node.js from `.nvmrc` and npm, and Python 3 for the docs check:
 
 - Install: `npm ci`
 - Dev server: `npm run dev` (`http://localhost:3000`)
@@ -65,6 +70,8 @@ Run from the repo root, with Node.js from `.nvmrc` and npm:
   `npm start` log reports
 - Client bundle analysis: `npx next analyze --output` (writes `.next/diagnostics/analyze`)
 - Supply chain: `npm audit --audit-level=high`
+- Docs check: `python3 scripts/check-docs.py`; its test: `python3 scripts/check-docs.test.py`
+- Workflow lint: `actionlint`, at the version `.github/workflows/ci.yaml` pins
 
 ## Repo facts
 
@@ -120,7 +127,7 @@ alt text, the README — load [writing-style](rules/writing-style.md) and the Pu
 - [rules/code-comments.md](rules/code-comments.md) — terse, self-documenting comments; load before writing comments / docs.
 - [rules/keep-agents-index-in-sync.md](rules/keep-agents-index-in-sync.md) — keep the nearest `AGENTS.md` in sync (structure, commands, conventions) with any change in a dir it documents, and keep `next dev`'s managed block out of it; load before changing such a dir.
 - [rules/no-deploy.md](rules/no-deploy.md) — a merge to `main` is a production deploy; never merge, trigger a deploy, or change Vercel settings, environment variables, domains, DNS, or repository settings without explicit per-action approval; load before any merge, deploy, Vercel or DNS change, or secret write.
-- [rules/git-workflow.md](rules/git-workflow.md) — branch naming (`0xjevons/<slug>[-gh<issue>]`) and worktrees under the sibling `web-worktrees/`, commit approval and `[scopes] Subject` format (`site`, `workspace`, `agents`), no AI signatures, local checks (`npm ci`, lint, typecheck, unit tests, build, `npm audit`; full CI runs on the PR, never publishing steps), force-push with lease; load before creating a branch, committing, pushing, or opening a PR.
+- [rules/git-workflow.md](rules/git-workflow.md) — branch naming (`0xjevons/<slug>[-gh<issue>]`) and worktrees under the sibling `web-worktrees/`, a new branch starting with no fix notes, commit approval and `[scopes] Subject` format (`site`, `workspace`, `agents`), no AI signatures, local checks (the docs check on every change, actionlint on a workflow change, and `npm ci`, lint, typecheck, unit tests, build, and `npm audit` once CI runs them; full CI runs on the PR, never publishing steps), force-push with lease; load before creating a branch, committing, pushing, or opening a PR.
 
 ### Skills
 
@@ -130,10 +137,10 @@ skills: section 16 of [development-checklist](rules/development-checklist.md) fo
 
 - [skills/web-implementation/SKILL.md](skills/web-implementation/SKILL.md) — all site conventions (the version-matched Next.js docs, TypeScript, error handling, input-handling doctrine, determinism of the simulations, numbers that mirror the engine, React 19 server and client components, hydration, effects under StrictMode, module-level state, static rendering, metadata and OG images, security headers and CSP, configuration, Tailwind CSS 4, next/font, accessibility, animation and reduced motion, performance budgets, privacy, public copy, dependencies, vitest, file structure, the 300-line cap and module splits, README, build configuration, TSDoc); load when writing, editing, or reviewing the site's code or configuration.
 - [skills/ask-agent/SKILL.md](skills/ask-agent/SKILL.md) — invoke a fresh or resumed Claude or Codex headless session at xhigh effort, with stable model defaults and explicit session IDs; load when a task dispatches an independent CLI agent.
-- [skills/agent-code-review/SKILL.md](skills/agent-code-review/SKILL.md) — review a branch or GitHub PR against `development-checklist`, graded by its severity guide, with the current agent or with Claude and Codex reviewers per `low` / `medium` / `high` level; writes local Markdown under gitignored `agents/.processes/reviews/` and prints a fixed report; also holds how any skill fixes an accepted finding — by class: name the invariant, fix every site, test the class, re-read the fix for mirror-image defects, and record the invariant and sites in the branch's gitignored fix notes under `agents/.processes/fixes/`, which every later review round checks; load for a local code review or before fixing an accepted finding — a GitHub PR review that drafts comments goes through `agent-review-pr`.
+- [skills/agent-code-review/SKILL.md](skills/agent-code-review/SKILL.md) — review a branch or GitHub PR against `development-checklist`, graded by its severity guide, with the current agent or with Claude and Codex reviewers per `low` / `medium` / `high` level; writes local Markdown under gitignored `agents/.processes/reviews/` and prints a fixed report; also holds how any skill fixes an accepted finding — by class: name the invariant, fix every site, test the class, re-read the fix for mirror-image defects, and record the invariant and sites in the branch's gitignored fix notes under the main checkout's `agents/.processes/fixes/`, which every later review round checks; and the review loop — a clean round ends it with the PR marked ready on that round's commit, any later change to the PR's diff but a mechanical rebase reopens it, Critical and High have no round cap, any round from 5 on that accepts Mediums but no Critical or High asks the owner to downgrade them to Low, a recorded downgrade stays while its scenario and impact do, and a round log in the fix notes carries the count across sessions; load for a local code review, before fixing an accepted finding, or to decide whether a PR's review loop has ended — a GitHub PR review that drafts comments goes through `agent-review-pr`.
 - [skills/agent-plan-feature/SKILL.md](skills/agent-plan-feature/SKILL.md) — turn a spec into vertical features that each ship as one PR and work end to end on a production build checked in a browser; a feature is Ready only when every behaviour decision it needs is recorded (spec, decision issue, or the engine's decisions its copy follows); one GitHub issue per feature with sourced acceptance criteria, a dev scenario and promotion needs, milestones in delivery order; re-plans an existing project issue by issue; the user revises and approves the plan before any issue write; load for "plan the build" / "break this spec into issues" / "organise the milestones" / "re-plan the project".
-- [skills/agent-build-feature/SKILL.md](skills/agent-build-feature/SKILL.md) — build one Ready feature end to end on one branch for one PR (parallel subagents merge into it, no stacked PRs), self-review with multi-agent `agent-code-review` at `medium` or higher, record the dev scenario and run it in a browser on a production build of the branch rebased onto `main` (local until Vercel is connected, then the branch's preview), with Playwright run from outside the repo, before the PR is marked ready, and again on each later head that changes the feature's behaviour; open via `agent-create-pr` ending `Closes #<feature>` so the merge closes the issue; checks readiness first (`ready-to-build`, or the same checks with the user for an issue the plan did not write); merges, deploys, and issue writes only on the user's approval; load for "build #12" / "implement this feature".
-- [skills/agent-create-pr/SKILL.md](skills/agent-create-pr/SKILL.md) — open a PR: issue blocker check (asks before opening over an open blocker, including one in the engine repo), every PR opened as a draft and marked ready only after the ready prerequisites, including feature completeness and a multi-agent `agent-code-review` at `medium` or higher that accepts no Critical / High / Medium finding; a feature never spanning several PRs, `[scopes] Title` and an end-state squashed-commit body ending with `Closes #12` (every feature PR) or `Part of #12` (a supporting PR that does not finish its issue); on the owner's go-ahead in chat, `merge-approved` on the approved head, then a squash merge pinned to it and branch cleanup; issues read-only; load for "create a PR" / "open a PR", before a PR title / body edit, or on the owner's go-ahead to merge.
+- [skills/agent-build-feature/SKILL.md](skills/agent-build-feature/SKILL.md) — build one Ready feature end to end on one branch for one PR (parallel subagents merge into it, no stacked PRs), self-review with multi-agent `agent-code-review` at `medium` or higher until its review loop ends, record the dev scenario and run it in a browser on a production build of the branch rebased onto `main` (local until Vercel is connected, then the branch's preview), with Playwright run from outside the repo, before the PR is marked ready, and again on each later head that changes the feature's behaviour; open via `agent-create-pr` ending `Closes #<feature>` so the merge closes the issue; checks readiness first (`ready-to-build`, or the same checks with the user for an issue the plan did not write); merges, deploys, and issue writes only on the user's approval; load for "build #12" / "implement this feature".
+- [skills/agent-create-pr/SKILL.md](skills/agent-create-pr/SKILL.md) — open a PR: issue blocker check (asks before opening over an open blocker, including one in the engine repo), every PR opened as a draft and marked ready only after the ready prerequisites, including feature completeness and a multi-agent `agent-code-review` loop at `medium` or higher that ends on a round accepting no Critical / High / Medium finding, or on the owner's consent to downgrade Mediums from round 5 on, with the PR marked ready on that round's commit; a feature never spanning several PRs, `[scopes] Title` and an end-state squashed-commit body ending with `Closes #12` (every feature PR) or `Part of #12` (a supporting PR that does not finish its issue); on the owner's go-ahead in chat, `merge-approved` on the approved head, then a squash merge pinned to it and branch cleanup; issues read-only; load for "create a PR" / "open a PR", before a PR title / body edit, or on the owner's go-ahead to merge.
 - [skills/agent-review-pr/SKILL.md](skills/agent-review-pr/SKILL.md) — review or re-review a GitHub PR via `agent-code-review` (multi-agent on request) and post its in-scope findings — Low confidence rechecked or dropped, points already in the discussion skipped or added as replies — as a PENDING review only after a yes to "Push the draft comments?"; a re-review runs the same flow and also rechecks your earlier threads; never submits; load for "review PR" / "draft review" / "review the PR but don't submit" / "re-check my review".
 - [skills/agent-address-pr-comments/SKILL.md](skills/agent-address-pr-comments/SKILL.md) — answer a PR's open threads and actionable comments: verify, agree the triage with the user, fix what is true and in scope, update the PR description, and post the approved replies as one `COMMENT` review; never approves, requests changes, or resolves; load for "address the PR comments" / "address review feedback" / "reply to the review".
-- [skills/agent-create-worktree/SKILL.md](skills/agent-create-worktree/SKILL.md) — create a worktree under the sibling `web-worktrees/`, named after the branch; detached at the head SHA to review a PR; load for "create a worktree" / "spin up a working tree".
+- [skills/agent-create-worktree/SKILL.md](skills/agent-create-worktree/SKILL.md) — create a worktree under the sibling `web-worktrees/`, named after the branch, clearing a new branch's leftover fix notes; detached at the head SHA to review a PR; load for "create a worktree" / "spin up a working tree".

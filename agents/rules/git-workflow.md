@@ -21,6 +21,10 @@ Load on request before creating a branch, committing, pushing, or opening or upd
     one when the request does not say; omit it when the user confirms there is none. Several
     issues are appended in order.
 - An existing branch, including a PR's head branch, keeps its original name.
+- A new branch starts with no fix notes: whoever creates it removes any
+  `agents/.processes/fixes/<branch>.md` left in the main checkout
+  ([agent-code-review](../skills/agent-code-review/SKILL.md#fixing-an-accepted-finding)), so a
+  reused name inherits no stale invariants.
 - Worktrees live under the sibling `web-worktrees/` directory, named after the branch
   ([agent-create-worktree](../skills/agent-create-worktree/SKILL.md)).
 
@@ -40,7 +44,7 @@ Load on request before creating a branch, committing, pushing, or opening or upd
   - Scopes are the areas touched, comma-separated: `[site]` (`src/`, and static files in
     `public/`), `[workspace]` (root config and manifests — `package.json`, the lockfile,
     `next.config.ts`, `tsconfig.json`, lint and test config, `.nvmrc`, `.npmrc`, `.gitignore` — the
-    README and LICENSE, and `.github/`), `[agents]` (`agents/` and the root
+    README and LICENSE, `.github/`, and `scripts/`), `[agents]` (`agents/` and the root
     `AGENTS.md` / `CLAUDE.md` links) — e.g. `[site,workspace]`.
   - Subject: imperative, specific, ≤ 72 chars including the tag, no trailing period.
   - Bullets use `-`, never `*`, and start with a verb such as `Add`, `Update`, `Fix`, `Remove`, or
@@ -55,12 +59,14 @@ Before a push that opens or updates a PR, check only what the change affects. Gi
 CI on the PR.
 
 - Take the validation commands of the `.github/workflows/` jobs the change can affect and run
-  them, each exiting zero. In `.github/workflows/ci.yaml` those are `npm ci`, then
-  `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and
-  `npm audit --audit-level=high`. Every job covers the whole project, so any change outside
-  Markdown and `agents/` runs all six, `npm ci` first so the checks use the lockfile as CI
-  installs it. A change confined to Markdown or `agents/` affects none of them; say so instead of
-  running them.
+  them, each exiting zero. In `.github/workflows/ci.yaml` those are the `docs` job's
+  `python3 scripts/check-docs.test.py` and `python3 scripts/check-docs.py`, run for every change,
+  since moving or renaming a file can break a link as surely as editing a page; and, for a change
+  under `.github/workflows/`, the `workflows` job's actionlint, at the version `ci.yaml` pins.
+- Once `ci.yaml` runs the site's checks — `npm ci`, then `npm run lint`, `npm run typecheck`,
+  `npm test`, `npm run build`, and `npm audit --audit-level=high` — each covers the whole project,
+  so any change outside Markdown and `agents/` runs all six, `npm ci` first so the checks use the
+  lockfile as CI installs it.
 - A push to a draft PR may carry failing or skipped checks when the PR says which; every CI
   check passes before the PR is marked ready.
 - Leave long-running checks — Lighthouse, browser runs, bundle analysis — to the steps that ask
