@@ -1,0 +1,132 @@
+import { RULES, STATUS } from "./content";
+import { SIM_RULES } from "./price-index";
+import { EMAIL, GITHUB_URL, TELEGRAM_URL, X_URL } from "./site";
+
+export type Segment = string | { href: string; label: string };
+export type Tone = "fg" | "muted" | "glow" | "alarm";
+
+export interface Line {
+  tone: Tone;
+  parts: Segment[];
+}
+
+export interface ShellResult {
+  lines: Line[];
+  /** Clear the screen before printing. */
+  clear?: boolean;
+  /** The id of a page section to move to. */
+  goto?: string;
+}
+
+const line = (tone: Tone, ...parts: Segment[]): Line => ({ tone, parts });
+const link = (href: string, label = href.replace(/^(https?:\/\/|mailto:)/, "")): Segment => ({ href, label });
+
+export const COMMANDS: readonly [string, string][] = [
+  ["help", "list commands"],
+  ["index", "how the price is set"],
+  ["rules", "the house rules"],
+  ["tape", "go to the public log"],
+  ["replay", "go to the replay demo"],
+  ["status", "what runs today"],
+  ["join", "the waitlist"],
+  ["code", "the source"],
+  ["contact", "email and X"],
+  ["clear", "clear the screen"],
+];
+
+/** Interprets one line typed at the prompt. Pure: the caller prints, clears, and scrolls. */
+export function runShell(input: string): ShellResult {
+  const trimmed = input.trim();
+  const [name = ""] = trimmed.toLowerCase().split(/\s+/);
+  switch (name) {
+    case "":
+      return { lines: [] };
+    case "help":
+    case "?":
+    case "man":
+      return {
+        lines: [
+          ...COMMANDS.map(([cmd, what]) => line("fg", `${cmd.padEnd(9)}${what}`)),
+          line("muted", "Some commands are not listed."),
+        ],
+      };
+    case "index":
+    case "price":
+      return {
+        lines: [
+          line("fg", "The index is the median of recent quotes from several independent venues."),
+          line(
+            "muted",
+            `In the engine's local configuration for BTC-USD, quotes older than ${SIM_RULES.maxAgeMs} ms are dropped, at least ` +
+              `${SIM_RULES.minSources} must be fresh, and they may spread at most ${SIM_RULES.maxDivergenceBps} bps.`,
+          ),
+          line("muted", "Otherwise the market has no price, and nothing fills."),
+        ],
+      };
+    case "rules":
+      return {
+        lines: RULES.map((r, i) =>
+          line(r.building ? "muted" : "fg", `${String(i + 1).padStart(2, "0")}  ${r.title}${r.building ? "  (in build)" : ""}`),
+        ),
+      };
+    case "tape":
+    case "log":
+      return { lines: [line("muted", "→ the public log")], goto: "tape" };
+    case "replay":
+    case "verify":
+      return { lines: [line("muted", "→ replay it yourself")], goto: "replay" };
+    case "status":
+      return {
+        lines: [
+          ...STATUS.map((s) => line(s.state === "running" ? "glow" : "muted", `${s.state.padEnd(9)}${s.name}`)),
+          line("fg", "Pre-launch. Nothing holds real funds."),
+        ],
+      };
+    case "join":
+    case "waitlist":
+    case "telegram":
+      return { lines: [line("fg", "The waitlist is a Telegram channel: ", link(TELEGRAM_URL))] };
+    case "code":
+    case "github":
+    case "source":
+      return { lines: [line("fg", "Apache-2.0, on GitHub: ", link(GITHUB_URL))] };
+    case "contact":
+    case "email":
+      return {
+        lines: [line("fg", "Email: ", link(`mailto:${EMAIL}`, EMAIL)), line("fg", "X: ", link(X_URL))],
+      };
+    case "clear":
+    case "cls":
+      return { lines: [], clear: true };
+    case "whoami":
+      return { lines: [line("fg", "guest. The house takes the other side; the ledger takes no sides.")] };
+    case "ls":
+      return { lines: [line("fg", "index/  tape/  replay/  rules/  status/")] };
+    case "jevons":
+      return {
+        lines: [
+          line("glow", "“Value depends entirely upon utility.”"),
+          line("muted", "W. S. Jevons, The Theory of Political Economy, 1871"),
+        ],
+      };
+    case "sunspots":
+      return {
+        lines: [
+          line("fg", "Jevons once traced trade cycles to sunspots."),
+          line("muted", "This index takes the median of venues instead. The sun is not a venue."),
+        ],
+      };
+    case "sudo":
+      return { lines: [line("alarm", "sudo: the rules are public, not writable.")] };
+    case "rm":
+      return { lines: [line("alarm", "rm: the log is append-only.")] };
+    case "banana":
+    case "bananas":
+      return { lines: [line("fg", "Collateral is USDC. Bananas remain unlisted.")] };
+    case "exit":
+    case "logout":
+      return { lines: [line("muted", "Positions close. The ledger stays.")] };
+    default:
+      return { lines: [line("alarm", `command not found: ${trimmed.split(/\s+/)[0]}`), line("muted", "Type help.")] };
+  }
+}
