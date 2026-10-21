@@ -103,9 +103,9 @@ The scenario's check is a script that drives a browser, so anyone can run it aga
 - Rebase the branch onto `main` and run the dev scenario in dev on that build, as [Dev](#dev)
   describes. Show the user the result. The site's CI runs no browser job, so this check, not CI,
   is the scenario's gate; a browser job in CI is the operator's call
-  ([general-practices](../../rules/general-practices.md)). A mechanical rebase needs no new review
-  round; one that changes behaviour does
-  ([the review loop](../agent-code-review/SKILL.md#the-review-loop)).
+  ([general-practices](../../rules/general-practices.md)). A mechanical rebase, as
+  [the review loop](../agent-code-review/SKILL.md#the-review-loop) defines it, needs no new review
+  round; any other rebase does.
 - Put what promotion needs in the PR body: anything the owner must set at Vercel, ordering against
   an engine change, and rollback when a revert is not enough.
 

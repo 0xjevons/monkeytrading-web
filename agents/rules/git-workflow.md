@@ -44,7 +44,7 @@ Load on request before creating a branch, committing, pushing, or opening or upd
   - Scopes are the areas touched, comma-separated: `[site]` (`src/`, and static files in
     `public/`), `[workspace]` (root config and manifests — `package.json`, the lockfile,
     `next.config.ts`, `tsconfig.json`, lint and test config, `.nvmrc`, `.npmrc`, `.gitignore` — the
-    README and LICENSE, and `.github/`), `[agents]` (`agents/` and the root
+    README and LICENSE, `.github/`, and `scripts/`), `[agents]` (`agents/` and the root
     `AGENTS.md` / `CLAUDE.md` links) — e.g. `[site,workspace]`.
   - Subject: imperative, specific, ≤ 72 chars including the tag, no trailing period.
   - Bullets use `-`, never `*`, and start with a verb such as `Add`, `Update`, `Fix`, `Remove`, or

@@ -48,8 +48,8 @@ current action.
 - **package.json** / **package-lock.json** — scripts and exact-pinned dependencies; the lockfile is
   committed, and CI installs from it with `npm ci`.
 - **agents/** — this index, `rules/`, and `skills/`; root `AGENTS.md` / `CLAUDE.md` symlink to
-  `agents/AGENTS.md`. The gitignored `agents/.processes/` holds local runs: reviews, plans, and dev
-  runs.
+  `agents/AGENTS.md`. The gitignored `agents/.processes/` holds local runs — reviews, plans, and dev
+  runs — and, in the main checkout, each PR branch's fix notes.
 - **README.md** — the public introduction: what the site is, how to run it, and how it deploys.
   Keep its commands and deployment notes in step with `package.json` and `siteUrl()`.
 - **LICENSE** — Apache License 2.0.

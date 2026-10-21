@@ -197,8 +197,11 @@ accepted Critical, High, and Medium finding is fixed by class before the next ro
 - **A later change reopens the loop.** Any change to the PR's diff — code, config, docs, or rules
   alike — after the loop ends, on a clean round or on the owner's downgrade, moves the PR back to
   draft and reopens the loop: a fix for a failed check or dev scenario, a fix for a review comment
-  on a ready PR, a change the user asks for, or a rebase that changes behaviour. A mechanical
-  rebase onto `main` does not; the rebased commit stands in for the reviewed one.
+  on a ready PR, a change the user asks for, or a rebase that is not mechanical. A rebase onto
+  `main` is mechanical when every commit applies without a conflict, `git range-diff` from the
+  reviewed commits to the rebased ones shows no patch changed, and nothing it brings in from
+  `main` changes how the PR's changes behave; the rebased commit then stands in for the reviewed
+  one.
 - **Critical and High have no round cap.** Keep fixing and re-reviewing until a round accepts none.
 - **Mediums get at most five rounds.** If any round numbered 5 or later — including one in a
   reopened loop — ends with no Critical or High but with Mediums remaining, stop. Report the
