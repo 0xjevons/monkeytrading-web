@@ -40,12 +40,13 @@ type Episode =
   | { kind: "stale"; venue: Venue; until: number }
   | { kind: "diverge"; venue: Venue; direction: 1 | -1; bps: number; from: number; until: number };
 
-export const VENUES = ["binance", "coinbase", "kraken"] as const;
+/** The venues the engine prices BTC-USD and ETH-USD from (`[feeds.venues]` in its `config/dev.toml`). */
+export const VENUES = ["coinbase", "kraken", "bitstamp"] as const;
 
 export const VENUE_NAMES: Readonly<Record<Venue, string>> = {
-  binance: "Binance",
   coinbase: "Coinbase",
   kraken: "Kraken",
+  bitstamp: "Bitstamp",
 };
 
 /** The `price_rules` the engine's `config/dev.toml` sets for BTC-USD. */
@@ -102,11 +103,11 @@ export function createIndexSim(seed: number, rules: PriceRules = SIM_RULES) {
   const rand = mulberry32(seed);
   let tick = 0;
   let base = START_MID;
-  const offsetBps: Record<Venue, number> = { binance: 0, coinbase: 0, kraken: 0 };
+  const offsetBps: Record<Venue, number> = { coinbase: 0, kraken: 0, bitstamp: 0 };
   const quotes: Quotes = {
-    binance: { mid: base, ts: 0 },
     coinbase: { mid: base, ts: 0 },
     kraken: { mid: base, ts: 0 },
+    bitstamp: { mid: base, ts: 0 },
   };
   let episode: Episode = { kind: "calm", until: 14 };
   const scripted: Episode[] = [
@@ -141,7 +142,7 @@ export function createIndexSim(seed: number, rules: PriceRules = SIM_RULES) {
     return {
       tick,
       now,
-      quotes: { binance: { ...quotes.binance }, coinbase: { ...quotes.coinbase }, kraken: { ...quotes.kraken } },
+      quotes: { coinbase: { ...quotes.coinbase }, kraken: { ...quotes.kraken }, bitstamp: { ...quotes.bitstamp } },
       index,
       history: [...history],
     };

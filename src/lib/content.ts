@@ -43,7 +43,7 @@ export const RULES: readonly Rule[] = [
   {
     title: "Markets keep their hours.",
     detail:
-      "Real-world markets follow their exchange's hours. Orders resting over a close fill at the first price after the open, gap and all.",
+      "Real-world markets keep their exchange's hours, holidays, and early closes. Orders resting over a close fill at the first price after the open, gap and all.",
   },
   {
     title: "The house caps its own risk.",
@@ -83,12 +83,18 @@ export const STATUS: readonly StatusItem[] = [
   {
     name: "Public log and replay",
     state: "running",
-    detail: "Replay checks the state hash at every checkpoint. Signature checks and a downloadable archive are in build.",
+    detail:
+      "Replay checks the state hash at every checkpoint, from a node's log or the archive it serves. Signature checks are in build.",
   },
   {
-    name: "Live market data",
+    name: "Live crypto prices",
+    state: "running",
+    detail: "BTC-USD and ETH-USD from Coinbase, Kraken, and Bitstamp, in place of simulated prices.",
+  },
+  {
+    name: "Live prices for other markets",
     state: "building",
-    detail: "The engine runs on simulated prices today.",
+    detail: "Currencies, stock indices, commodities, and shares run on simulated prices today.",
   },
   {
     name: "Custody on Arbitrum One",

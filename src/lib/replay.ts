@@ -142,9 +142,9 @@ export function applyCommand(prev: DemoState, seq: number, command: Command): Ap
       market.quotes = { ...command.quotes };
       // Every quote in a prices command arrives at its seq, so all are fresh.
       const quotes: Quotes = {
-        binance: { mid: command.quotes.binance, ts: 0 },
         coinbase: { mid: command.quotes.coinbase, ts: 0 },
         kraken: { mid: command.quotes.kraken, ts: 0 },
+        bitstamp: { mid: command.quotes.bitstamp, ts: 0 },
       };
       const rules = { maxAgeMs: 0, maxDivergenceBps: market.max_divergence_bps, minSources: market.min_sources };
       const index = computeIndex(quotes, rules, 0);

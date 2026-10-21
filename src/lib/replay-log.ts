@@ -28,48 +28,48 @@ export const DEMO_LOG: readonly LogEntry[] = [
   },
   {
     seq: 3,
-    command: prices(10_001_240, 10_001_890, 10_000_970),
-    root: "0x73dd35534b714ae316ef25649efb8c80f4d07935f2387dd2cd8c2e4bd7163130",
+    command: prices(10_001_890, 10_000_970, 10_001_240),
+    root: "0x825229f1ea17ed0e3ef50f03dfda94e60558ba5caf3b0ef47a69e25533eefa8f",
   },
   {
     seq: 4,
     command: { type: "order", account: A, market: "BTC-USD", side: "buy", qty: 250 },
-    root: "0xd33a263cc92f638911ed9873a010f727c7a469c2e5cd4ad4694398eff7ab1fec",
+    root: "0x9a4e2d406a1b5c958609a00ff8e1af3e9d68a17a485fcb48fe2fae9ef23acc93",
   },
   {
     seq: 5,
     command: { type: "deposit", account: B, amount: 2_000_000 },
-    root: "0x861ce29593e5bf943608ecf207be8860d3dcb8c31c60eb6a0b64f9161c6625e3",
+    root: "0x238522d2e3e33924e415c19c0446fa6edcbbeff9a6b7652c944e30288821ad6a",
   },
   {
     seq: 6,
     command: { type: "order", account: B, market: "BTC-USD", side: "sell", qty: 100 },
-    root: "0xd4cfceb5fa7ce2b46e0a273d9777496fe00225fcbf50c153e60e717d866698b4",
+    root: "0x79b1885ca9c55524b875f0d4d9a00a50eddb5970dd1ed9f038f865aaa36607b6",
   },
   {
     seq: 7,
-    command: prices(10_023_110, 10_056_000, 10_022_840),
-    root: "0x385ec322abe6376083184f459821cc23f8d23d953a8798ee687cbe8056d6f2c9",
+    command: prices(10_056_000, 10_022_840, 10_023_110),
+    root: "0x386a1cdfc155aad4e39ced0c1c7d1a907537a4c5c340824d9c27b2a8b349beaf",
   },
   {
     seq: 8,
     command: { type: "order", account: A, market: "BTC-USD", side: "sell", qty: 250 },
-    root: "0xcaf92ddb17a89f4af12d7c2327aec887088e4c7423fe854b3c4388070ad128c1",
+    root: "0xeb7376577955578695ad8c2de86e9e664ea36958efdbd1570f91d5da217bc5d0",
   },
   {
     seq: 9,
-    command: prices(10_040_270, 10_040_520, 10_039_990),
-    root: "0x31a247e6b887af4475b396644fdfe2e03c063210e514851070e7acc8e54ff887",
+    command: prices(10_040_520, 10_039_990, 10_040_270),
+    root: "0x94032d96af2587574f6db2256b886b5ed7960ef0d96a443f23372efa12e30f7e",
   },
   {
     seq: 10,
     command: { type: "order", account: A, market: "BTC-USD", side: "sell", qty: 250 },
-    root: "0xa165ab316d46d13049a43a454d6df582c02bcb261854a7de63524f7015d30c8b",
+    root: "0xc2180c3e983a6c43cb7ee406486d77d78baf92e52bccff91edd93f31d7039bdd",
   },
   {
     seq: 11,
     command: { type: "order", account: B, market: "BTC-USD", side: "buy", qty: 100 },
-    root: "0x89734abdbfb9915c94b006a1b351878426d7653a1b43a597a0fcc42168c81cd7",
+    root: "0x0c827e400f7a2cba9ba23b41e898cffc005a5d2ffe97b8f6478a8453c39dbf0b",
   },
 ];
 
@@ -111,6 +111,6 @@ export function tamperLog(log: readonly LogEntry[], tamper: Tamper): LogEntry[] 
 }
 
 /** A BTC-USD prices command with each venue's quote, in cents. */
-function prices(binance: number, coinbase: number, kraken: number): Command {
-  return { type: "prices", market: "BTC-USD", quotes: { binance, coinbase, kraken } };
+function prices(coinbase: number, kraken: number, bitstamp: number): Command {
+  return { type: "prices", market: "BTC-USD", quotes: { coinbase, kraken, bitstamp } };
 }

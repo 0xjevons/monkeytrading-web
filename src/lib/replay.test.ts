@@ -88,7 +88,7 @@ describe("applyCommand", () => {
   const priced = accept(funded, 3, {
     type: "prices",
     market: "BTC-USD",
-    quotes: { binance: 10_000_000, coinbase: 10_000_500, kraken: 9_999_000 },
+    quotes: { bitstamp: 10_000_000, coinbase: 10_000_500, kraken: 9_999_000 },
   }).state;
 
   it("fills a market order at the median, with no spread", () => {
@@ -109,7 +109,7 @@ describe("applyCommand", () => {
     const higher = accept(bought.state, 5, {
       type: "prices",
       market: "BTC-USD",
-      quotes: { binance: 10_010_000, coinbase: 10_010_000, kraken: 10_010_000 },
+      quotes: { bitstamp: 10_010_000, coinbase: 10_010_000, kraken: 10_010_000 },
     });
     const sold = accept(higher.state, 6, {
       type: "order",
@@ -128,7 +128,7 @@ describe("applyCommand", () => {
     const apart = accept(funded, 3, {
       type: "prices",
       market: "BTC-USD",
-      quotes: { binance: 10_000_000, coinbase: 10_026_000, kraken: 10_000_100 },
+      quotes: { bitstamp: 10_000_000, coinbase: 10_026_000, kraken: 10_000_100 },
     });
     // 260.00 apart is 25.99 bps of the median, which truncates to 25: at the limit, so still a price.
     expect(apart.event).toBe("index 100,001.00");
@@ -136,7 +136,7 @@ describe("applyCommand", () => {
     const wider = accept(funded, 3, {
       type: "prices",
       market: "BTC-USD",
-      quotes: { binance: 10_000_000, coinbase: 10_030_000, kraken: 10_000_100 },
+      quotes: { bitstamp: 10_000_000, coinbase: 10_030_000, kraken: 10_000_100 },
     });
     expect(wider.event).toBe("no price: quotes 29 bps apart");
     expect(wider.state.markets["BTC-USD"]?.index).toBeNull();
@@ -169,7 +169,7 @@ describe("applyCommand", () => {
       [
         funded,
         3,
-        { type: "prices", market: "BTC-USD", quotes: { binance: 1, coinbase: 0, kraken: 1 } },
+        { type: "prices", market: "BTC-USD", quotes: { bitstamp: 1, coinbase: 0, kraken: 1 } },
         "coinbase quote must be a positive integer",
       ],
     ];

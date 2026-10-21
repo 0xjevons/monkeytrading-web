@@ -10,28 +10,29 @@ function frame(quotes: Quotes, now = 5_000): SimFrame {
   return { tick: now / 250, now, quotes, index: computeIndex(quotes, SIM_RULES, now), history: [] };
 }
 
+/** Quotes from Bitstamp, Coinbase, and Kraken at 5,000 ms, Kraken's at `kTs`. */
 const q = (b: number, c: number, k: number, kTs = 5_000): Quotes => ({
-  binance: { mid: b, ts: 5_000 },
   coinbase: { mid: c, ts: 5_000 },
   kraken: { mid: k, ts: kTs },
+  bitstamp: { mid: b, ts: 5_000 },
 });
 
 describe("venueRows", () => {
   it("gives fresh venues their truncated distance from the median, in tenths of a bp", () => {
     // Median 100,000.00; +13.00 is +1.3 bps, and -9.99 is -0.999 bps, truncated to -0.9.
     expect(venueRows(frame(q(10_001_300, 10_000_000, 9_999_001)))).toEqual([
-      { venue: "binance", fresh: true, offsetTenthBps: 13, apart: false },
       { venue: "coinbase", fresh: true, offsetTenthBps: 0, apart: false },
       { venue: "kraken", fresh: true, offsetTenthBps: -9, apart: false },
+      { venue: "bitstamp", fresh: true, offsetTenthBps: 13, apart: false },
     ]);
   });
 
   it("measures from the median of the fresh quotes and leaves a stale venue without a distance", () => {
     // Kraken is 1,001 ms old; the median of the other two is their midpoint, 100,005.00.
     expect(venueRows(frame(q(10_001_000, 10_000_000, 1, 3_999)))).toEqual([
-      { venue: "binance", fresh: true, offsetTenthBps: 4, apart: false },
       { venue: "coinbase", fresh: true, offsetTenthBps: -4, apart: false },
       { venue: "kraken", fresh: false, offsetTenthBps: null, apart: false },
+      { venue: "bitstamp", fresh: true, offsetTenthBps: 4, apart: false },
     ]);
   });
 
@@ -39,7 +40,7 @@ describe("venueRows", () => {
     // 42 bps apart: no price, and Coinbase is 41.9 bps from the median, past half the 25 bps limit.
     const divergent = frame(q(10_000_000, 10_042_000, 10_000_100));
     expect(divergent.index.status).toBe("divergent");
-    expect(venueRows(divergent).map((r) => r.apart)).toEqual([false, true, false]);
+    expect(venueRows(divergent).map((r) => r.apart)).toEqual([true, false, false]);
     // 20 bps apart is within the limit, so nothing is apart even though Coinbase is far out.
     const priced = frame(q(10_000_000, 10_020_000, 10_000_100));
     expect(priced.index.status).toBe("price");
