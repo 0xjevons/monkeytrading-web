@@ -14,6 +14,7 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 
 import { formatCents, formatMilli, formatSigned } from "./format";
 import { computeIndex, VENUES, type IndexOutcome, type Quotes, type Venue } from "./price-index";
+import { unreachable } from "./unreachable";
 
 export type Side = "buy" | "sell";
 
@@ -105,6 +106,9 @@ export function stateRoot(state: DemoState): string {
  * - a seq other than the one after the last applied
  * - a command naming an unlisted market, an already listed one, or an unfunded account
  * - an amount, quote, or quantity that is not a positive integer
+ *
+ * Error cases:
+ * - a command type outside `Command`
  */
 export function applyCommand(prev: DemoState, seq: number, command: Command): Applied {
   const expected = prev.last_seq === null ? 1 : prev.last_seq + 1;
@@ -166,11 +170,15 @@ export function applyCommand(prev: DemoState, seq: number, command: Command): Ap
       return { ok: true, state, event: realised === 0 ? fill : `${fill}, realised ${formatSigned(realised, 2)}` };
     }
     default:
-      return unreachable(command);
+      return unreachable(command, "replay");
   }
 }
 
-/** The event text for a prices command's index. */
+/**
+ * The event text for a prices command's index.
+ * Error cases:
+ * - a status outside `IndexOutcome`
+ */
 function describeIndex(index: IndexOutcome): string {
   switch (index.status) {
     case "price":
@@ -180,7 +188,7 @@ function describeIndex(index: IndexOutcome): string {
     case "stale":
       return `no price: ${index.used.length} of ${index.needed} quotes`;
     default:
-      return unreachable(index);
+      return unreachable(index, "replay");
   }
 }
 
@@ -218,15 +226,6 @@ function notPositive(value: number | undefined, name: string): string | null {
 }
 
 /**
- * Marks a switch as exhaustive: the type checker rejects a call while any member is unhandled.
- * Error cases:
- * - reached at run time, which only a value outside its declared type can do
- */
-function unreachable(value: never): never {
-  throw new Error(`replay: unhandled value ${JSON.stringify(value)}`);
-}
-
-/**
  * Re-applies `log` from an empty state and checks each published root, stopping at the first
  * command that fails or root that differs, as `engine replay` does. The last step of a failed
  * replay is the one that diverged.
@@ -257,7 +256,11 @@ export function replay(log: readonly LogEntry[]): ReplayResult {
   return { ok: true, steps };
 }
 
-/** A one-line rendering of a command, as the log viewer shows it. */
+/**
+ * A one-line rendering of a command, as the log viewer shows it.
+ * Error cases:
+ * - a command type outside `Command`
+ */
 export function describeCommand(command: Command): string {
   switch (command.type) {
     case "list_market":
@@ -269,6 +272,6 @@ export function describeCommand(command: Command): string {
     case "order":
       return `order ${command.account} ${command.side} ${formatMilli(command.qty)} ${command.market}`;
     default:
-      return unreachable(command);
+      return unreachable(command, "replay");
   }
 }

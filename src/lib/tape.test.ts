@@ -2,7 +2,16 @@
 
 import { describe, expect, it } from "vitest";
 
-import { CHECKPOINT_EVERY, createTape, tapeWindow, type TapeCommand, type TapeEntry } from "./tape";
+import {
+  chainRoot,
+  CHECKPOINT_EVERY,
+  createTape,
+  GENESIS_ROOT,
+  TAPE_MARKETS,
+  tapeWindow,
+  type TapeCommand,
+  type TapeEntry,
+} from "./tape";
 
 /** The first `n` or more entries of a tape. */
 const take = (seed: number, n: number, firstSeq = 1): TapeEntry[] => {
@@ -36,10 +45,12 @@ describe("createTape", () => {
     expect(entries.filter((e) => e.kind === "checkpoint").map((e) => e.seq).slice(0, 3)).toEqual([12, 24, 36]);
   });
 
-  it("gives every command a new keccak-256 root", () => {
-    const roots = commands(take(7, 50)).map((e) => e.root);
-    expect(new Set(roots).size).toBe(roots.length);
-    for (const root of roots) expect(root).toMatch(/^0x[0-9a-f]{64}$/);
+  it("chains each command's root from the root before it, starting at the genesis root", () => {
+    let previous = GENESIS_ROOT;
+    for (const command of commands(take(7, 50))) {
+      expect(command.root).toBe(chainRoot(previous, { seq: command.seq, ...command.command }));
+      previous = command.root;
+    }
   });
 
   it("fills each order at its market's last published index, and rejects it after no price", () => {
@@ -65,15 +76,34 @@ describe("createTape", () => {
     expect(rejections).toBeGreaterThan(0);
   });
 
-  it("publishes no price exactly when the quotes spread past 25 bps", () => {
+  it("publishes no price exactly when the quotes spread past their market's limit", () => {
+    const limits = new Map(TAPE_MARKETS.map((m) => [m.symbol, m.maxDivergenceBps]));
     const prices = commands(take(1871, 3_000)).filter((c) => c.type === "PRICES");
     for (const command of prices) {
+      const limit = limits.get(command.market ?? "");
       const apart = /no price · (\d+) bps apart/.exec(command.result);
+      expect(limit).toBeDefined();
       expect(command.refused).toBe(apart !== null);
-      if (apart) expect(Number(apart[1])).toBeGreaterThan(25);
+      if (apart) expect(Number(apart[1])).toBeGreaterThan(limit ?? 0);
       else expect(command.price).not.toBeNull();
     }
     expect(prices.some((c) => c.refused)).toBe(true);
+  });
+});
+
+describe("chainRoot", () => {
+  const deposit = { seq: 1, deposit: { account: "0x0001", amount: 25_000 } };
+
+  it("is keccak-256 of the previous root's bytes followed by the command's canonical JSON", () => {
+    // Computed with an independent tool over 32 zero bytes, then '{"deposit":{"account":"0x0001","amount":25000},"seq":1}'.
+    expect(chainRoot(GENESIS_ROOT, deposit)).toBe("0xf5ba207683a149e0276730908ab257149efaa1b8dce2cc8a4997891c948df407");
+  });
+
+  it("depends on the previous root", () => {
+    // The same command after a root of 32 0x11 bytes, also computed independently.
+    expect(chainRoot(`0x${"11".repeat(32)}`, deposit)).toBe(
+      "0xa8d0bcbdc1ee35758d229d255f907479ef339cfcc6ad4270589d90eac33ab9e4",
+    );
   });
 });
 

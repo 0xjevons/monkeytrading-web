@@ -12,11 +12,13 @@ import { bpsOf, median } from "./price-index";
 import { mulberry32, randInt } from "./prng";
 import { canonicalJson } from "./replay";
 
-interface TapeMarket {
+export interface TapeMarket {
   symbol: string;
   /** Price decimals and starting mid, in `10^-priceDp` units. */
   priceDp: number;
   mid: number;
+  /** The widest spread of quotes, in bps of their median, that still gives a price. */
+  maxDivergenceBps: number;
   /** Quantity decimals and the order-size range, in `10^-qtyDp` units. */
   qtyDp: number;
   qty: readonly [number, number];
@@ -40,6 +42,9 @@ export interface TapeCommand {
   price: number | null;
   /** True when the result is a refusal: no price for PRICES, a rejected ORDER. */
   refused: boolean;
+  /** The command as the root hashes it, without its seq. */
+  command: Record<string, unknown>;
+  /** `chainRoot(previous root, { seq, ...command })`. */
   root: string;
 }
 
@@ -51,24 +56,32 @@ export interface TapeCheckpoint {
 
 export type TapeEntry = TapeCommand | TapeCheckpoint;
 
-/** A command before sequencing: its line on the tape and the payload the root folds in. */
-type Unsequenced = Omit<TapeCommand, "kind" | "seq" | "root"> & { payload: Record<string, unknown> };
+/** A command before sequencing: its line on the tape and the command the root folds in. */
+type Unsequenced = Omit<TapeCommand, "kind" | "seq" | "root">;
 
-const MARKETS: readonly TapeMarket[] = [
-  { symbol: "BTC-USD", priceDp: 2, mid: 10_000_000, qtyDp: 3, qty: [10, 500] },
-  { symbol: "ETH-USD", priceDp: 2, mid: 400_000, qtyDp: 2, qty: [10, 800] },
-  { symbol: "EUR-USD", priceDp: 5, mid: 108_000, qtyDp: 0, qty: [1_000, 50_000] },
-  { symbol: "US500", priceDp: 1, mid: 65_000, qtyDp: 1, qty: [5, 100] },
-  { symbol: "XAU-USD", priceDp: 2, mid: 260_000, qtyDp: 1, qty: [10, 200] },
-  { symbol: "AAPL", priceDp: 2, mid: 23_000, qtyDp: 0, qty: [1, 150] },
+/**
+ * The engine's local markets: the starting mids are its `config/dev.toml` `mock_mids`, and each
+ * spread limit is that market's `price_rules.max_divergence_bps`.
+ */
+export const TAPE_MARKETS: readonly TapeMarket[] = [
+  { symbol: "BTC-USD", priceDp: 2, mid: 10_000_000, maxDivergenceBps: 25, qtyDp: 3, qty: [10, 500] },
+  { symbol: "ETH-USD", priceDp: 2, mid: 400_000, maxDivergenceBps: 25, qtyDp: 2, qty: [10, 800] },
+  { symbol: "EUR-USD", priceDp: 5, mid: 108_000, maxDivergenceBps: 5, qtyDp: 0, qty: [1_000, 50_000] },
+  { symbol: "US500", priceDp: 1, mid: 65_000, maxDivergenceBps: 10, qtyDp: 1, qty: [5, 100] },
+  { symbol: "XAU-USD", priceDp: 2, mid: 260_000, maxDivergenceBps: 10, qtyDp: 1, qty: [10, 200] },
+  { symbol: "AAPL", priceDp: 2, mid: 23_000, maxDivergenceBps: 10, qtyDp: 0, qty: [1, 150] },
 ];
 
-const MAX_DIVERGENCE_BPS = 25;
 export const CHECKPOINT_EVERY = 12;
-const GENESIS_ROOT = `0x${"00".repeat(32)}`;
+/** The seq of the tape's first command. */
+export const TAPE_FIRST_SEQ = 48_201;
+/** The rows the tape panel shows, and the milliseconds between commands. */
+export const TAPE_ROWS = 13;
+export const TAPE_STEP_MS = 1100;
+export const GENESIS_ROOT = `0x${"00".repeat(32)}`;
 
-/** `keccak(prev ‖ canonical JSON of command)`, as `0x`-prefixed hex. */
-function chain(prev: string, command: Record<string, unknown>): string {
+/** `keccak256(prev ‖ canonical JSON of command)`, as `0x`-prefixed hex; `prev` is `0x`-prefixed too. */
+export function chainRoot(prev: string, command: Record<string, unknown>): string {
   const bytes = concatBytes(hexToBytes(prev.slice(2)), utf8ToBytes(canonicalJson(command)));
   return `0x${bytesToHex(keccak_256(bytes))}`;
 }
@@ -80,16 +93,16 @@ function chain(prev: string, command: Record<string, unknown>): string {
  */
 export function createTape(seed: number, firstSeq = 1) {
   const rand = mulberry32(seed);
-  const walk = MARKETS.map((m) => m.mid);
+  const walk = TAPE_MARKETS.map((m) => m.mid);
   // The index each market last published; `undefined` before its first prices, `null` for no price.
-  const published: (number | null | undefined)[] = MARKETS.map(() => undefined);
+  const published: (number | null | undefined)[] = TAPE_MARKETS.map(() => undefined);
   let seq = firstSeq - 1;
   let root = GENESIS_ROOT;
 
   const account = () => `0x${randInt(rand, 0, 0xffff).toString(16).padStart(4, "0")}`;
 
   function market(i: number): TapeMarket {
-    const m = MARKETS[i];
+    const m = TAPE_MARKETS[i];
     // `i` is drawn from the table's own index range.
     if (m === undefined) throw new Error(`tape: no market at index ${i}`);
     return m;
@@ -106,7 +119,7 @@ export function createTape(seed: number, firstSeq = 1) {
     });
     const index = median(quotes);
     const apart = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);
-    const priced = apart <= MAX_DIVERGENCE_BPS;
+    const priced = apart <= m.maxDivergenceBps;
     published[i] = priced ? index : null;
     return {
       type: "PRICES",
@@ -115,7 +128,7 @@ export function createTape(seed: number, firstSeq = 1) {
       result: priced ? `index ${formatFixed(index, m.priceDp)}` : `no price · ${apart} bps apart`,
       price: priced ? index : null,
       refused: !priced,
-      payload: { prices: { market: m.symbol, quotes } },
+      command: { prices: { market: m.symbol, quotes } },
     };
   }
 
@@ -131,7 +144,7 @@ export function createTape(seed: number, firstSeq = 1) {
       result: fill === null ? "rejected · no price" : `filled @ ${formatFixed(fill, m.priceDp)}`,
       price: fill,
       refused: fill === null,
-      payload: { order: { account: who, market: m.symbol, side, qty } },
+      command: { order: { account: who, market: m.symbol, side, qty } },
     };
   }
 
@@ -145,13 +158,13 @@ export function createTape(seed: number, firstSeq = 1) {
       result: "credited",
       price: null,
       refused: false,
-      payload: { deposit: { account: who, amount } },
+      command: { deposit: { account: who, amount } },
     };
   }
 
   function draw(): Unsequenced {
     const roll = rand();
-    const i = randInt(rand, 0, MARKETS.length - 1);
+    const i = randInt(rand, 0, TAPE_MARKETS.length - 1);
     if (roll >= 0.92) return deposit();
     const last = published[i];
     if (roll < 0.5 || last === undefined) return prices(i);
@@ -160,8 +173,8 @@ export function createTape(seed: number, firstSeq = 1) {
 
   function next(): TapeEntry[] {
     seq += 1;
-    const { payload, ...line } = draw();
-    root = chain(root, { seq, ...payload });
+    const line = draw();
+    root = chainRoot(root, { seq, ...line.command });
     const entries: TapeEntry[] = [{ kind: "command", seq, root, ...line }];
     if (seq % CHECKPOINT_EVERY === 0) entries.push({ kind: "checkpoint", seq, root });
     return entries;

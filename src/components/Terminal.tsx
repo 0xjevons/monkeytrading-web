@@ -4,7 +4,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
-import { MAX_INPUT, runShell, type Line, type Tone } from "@/lib/shell";
+import { MAX_INPUT, recall, runShell, type Line, type Recall, type Tone } from "@/lib/shell";
 
 const PROMPT_HOST = "guest@house:";
 const PROMPT_PATH = "~$";
@@ -31,10 +31,9 @@ const WELCOME: Line[] = [
 /** The shell panel: output above, a labelled input below, with Up and Down to recall earlier lines. */
 export function Terminal() {
   const inputId = useId();
-  const [value, setValue] = useState("");
+  const [input, setInput] = useState<Recall>({ cursor: null, draft: "", value: "" });
   const [entries, setEntries] = useState<Entry[]>(() => WELCOME.map((line, id) => ({ id, line })));
   const [history, setHistory] = useState<string[]>([]);
-  const [cursor, setCursor] = useState<number | null>(null);
   const nextId = useRef(WELCOME.length);
   const output = useRef<HTMLDivElement>(null);
 
@@ -45,14 +44,13 @@ export function Terminal() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const input = value;
-    const result = runShell(input);
-    const echo: Line = { tone: "muted", parts: [`${PROMPT} ${input}`] };
+    const typed = input.value;
+    const result = runShell(typed);
+    const echo: Line = { tone: "muted", parts: [`${PROMPT} ${typed}`] };
     const fresh = [echo, ...result.lines].map((line) => ({ id: nextId.current++, line }));
     setEntries((prev) => (result.clear ? [] : [...prev, ...fresh].slice(-MAX_LINES)));
-    if (input.trim()) setHistory((prev) => [...prev, input].slice(-30));
-    setCursor(null);
-    setValue("");
+    if (typed.trim()) setHistory((prev) => [...prev, typed].slice(-30));
+    setInput({ cursor: null, draft: "", value: "" });
     if (result.goto) {
       const target = document.getElementById(result.goto);
       target?.scrollIntoView({ block: "start" });
@@ -62,13 +60,10 @@ export function Terminal() {
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-    if (!history.length) return;
+    const next = recall(history, input, event.key === "ArrowUp" ? "up" : "down");
+    if (next === null) return;
     event.preventDefault();
-    const up = event.key === "ArrowUp";
-    const from = cursor ?? history.length;
-    const next = Math.min(history.length, Math.max(0, from + (up ? -1 : 1)));
-    setCursor(next === history.length ? null : next);
-    setValue(next === history.length ? "" : (history[next] ?? ""));
+    setInput(next);
   };
 
   return (
@@ -79,6 +74,8 @@ export function Terminal() {
       </div>
       <div
         ref={output}
+        // Focusable, so the keyboard can scroll it where the browser does not make scrollers focusable.
+        tabIndex={0}
         role="log"
         aria-live="polite"
         aria-label="Shell output"
@@ -97,6 +94,7 @@ export function Terminal() {
                   {...(part.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
                   {part.label}
+                  {part.href.startsWith("http") && <span className="sr-only"> (opens in a new tab)</span>}
                 </a>
               ),
             )}
@@ -113,8 +111,8 @@ export function Terminal() {
         </label>
         <input
           id={inputId}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
+          value={input.value}
+          onChange={(e) => setInput({ ...input, value: e.target.value })}
           onKeyDown={onKeyDown}
           autoComplete="off"
           autoCapitalize="off"

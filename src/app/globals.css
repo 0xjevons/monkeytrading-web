@@ -31,13 +31,13 @@
   --shadow-glow: 0 0 1.75rem -0.375rem var(--color-glow);
 
   --animate-row-in: row-in 0.9s ease-out both;
+  --animate-row-flash: row-flash 0.9s ease-out both;
   --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
   --animate-tape-shift-1: tape-shift-1 0.45s ease-out;
   --animate-tape-shift-2: tape-shift-2 0.45s ease-out;
 
   @keyframes row-in {
     from {
-      background-color: color-mix(in oklab, var(--color-glow) 14%, transparent);
       transform: translateY(0.35rem);
       opacity: 0;
     }
@@ -45,8 +45,13 @@
       opacity: 1;
       transform: none;
     }
+  }
+  @keyframes row-flash {
+    from {
+      opacity: 1;
+    }
     to {
-      background-color: transparent;
+      opacity: 0;
     }
   }
   /* The tape's rows move up by the one or two rows a tick adds; `--row` is the row height. */

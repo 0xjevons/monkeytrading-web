@@ -13,8 +13,8 @@ export function Rules() {
             House rules, in plain sight.
           </h2>
           <p className="mt-6 text-sm leading-relaxed text-fg-2">
-            Short enough to read, exact enough to replay. They are written into the engine&apos;s public code, not a
-            terms page.
+            Short enough to read, exact enough to replay. The built rules are written into the engine&apos;s public
+            code, not a terms page; those marked in build are on their way there.
           </p>
         </div>
         <ol className="mt-12 grid gap-px overflow-hidden rounded-xl border border-line-2 bg-line-2 sm:grid-cols-2 lg:grid-cols-3">

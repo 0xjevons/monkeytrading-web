@@ -1,6 +1,6 @@
 /** The shell's command interpreter: a typed reading of one input line, with nothing executed. */
 
-import { RULES, STATUS } from "./content";
+import { RULES, STATUS, STATUS_LABELS } from "./content";
 import { SIM_RULES } from "./price-index";
 import { EMAIL, GITHUB_URL, TELEGRAM_URL, X_URL } from "./site";
 
@@ -86,14 +86,16 @@ export function runShell(input: string): ShellResult {
     case "status":
       return {
         lines: [
-          ...STATUS.map((s) => line(s.state === "running" ? "glow" : "muted", `${s.state.padEnd(9)}${s.name}`)),
+          ...STATUS.map((s) =>
+            line(s.state === "running" ? "glow" : "muted", `${STATUS_LABELS[s.state].toLowerCase().padEnd(14)}${s.name}`),
+          ),
           line("fg", "Pre-launch. Nothing holds real funds."),
         ],
       };
     case "join":
     case "waitlist":
     case "telegram":
-      return { lines: [line("fg", "The waitlist is a Telegram channel: ", link(TELEGRAM_URL))] };
+      return { lines: [line("fg", "Join the waitlist on Telegram: ", link(TELEGRAM_URL))] };
     case "code":
     case "github":
     case "source":
@@ -137,4 +139,32 @@ export function runShell(input: string): ShellResult {
     default:
       return { lines: [line("alarm", `command not found: ${trimmed.split(/\s+/)[0]}`), line("muted", "Type help.")] };
   }
+}
+
+/** Where the visitor is in their earlier lines, and the line they were typing before they left it. */
+export interface Recall {
+  /** The history entry shown, or `null` while the visitor edits their own line. */
+  cursor: number | null;
+  /** The line the visitor was typing when Up first left it. */
+  draft: string;
+  /** What the input shows. */
+  value: string;
+}
+
+/**
+ * The input after Up or Down, as a readline shell does it: Up steps back through `history`, saving
+ * the typed line on the first step; Down steps forward and, past the newest entry, restores that
+ * line. Returns `null` when the key changes nothing, so the input keeps its default behaviour.
+ */
+export function recall(history: readonly string[], current: Recall, key: "up" | "down"): Recall | null {
+  if (history.length === 0) return null;
+  if (key === "up") {
+    const cursor = current.cursor === null ? history.length - 1 : Math.max(0, current.cursor - 1);
+    const draft = current.cursor === null ? current.value : current.draft;
+    return { cursor, draft, value: history[cursor] ?? "" };
+  }
+  if (current.cursor === null) return null;
+  const cursor = current.cursor + 1;
+  if (cursor >= history.length) return { cursor: null, draft: "", value: current.draft };
+  return { cursor, draft: current.draft, value: history[cursor] ?? "" };
 }

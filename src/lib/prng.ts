@@ -1,4 +1,7 @@
-/** The seeded random generator that drives every simulation on the page. */
+/** The seeded random generator that drives every simulation on the page, and the seed they share. */
+
+/** The seed every simulation starts from: 1871, the year of Jevons's *The Theory of Political Economy*. */
+export const SEED = 1871;
 
 /**
  * Mulberry32: a small seeded generator returning floats in [0, 1). It drives the simulations so

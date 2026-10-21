@@ -20,15 +20,17 @@ npm run dev
 ```
 
 The development server listens on `http://localhost:3000`. To check a change the way CI does, run
-`npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`; `npm start` then serves the
-production build.
+`npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and
+`npm audit --audit-level=high`, and, with Python 3, `python3 scripts/check-docs.py`; `npm start`
+then serves the production build.
 
 ## Deployment
 
-The site deploys on Vercel as a standard Next.js project and needs no environment variables. The
-canonical address used in page metadata, the sitemap, and `robots.txt` defaults to the Vercel
-project's production domain; set `SITE_URL` to override it. The waitlist link is `TELEGRAM_URL` in
-[`src/lib/site.ts`](src/lib/site.ts).
+The site deploys on Vercel as a standard Next.js project, on the Node.js 24 that `package.json`
+declares, and needs no environment variables. The canonical address used in page metadata, the
+sitemap, and `robots.txt` defaults to the Vercel project's production domain; set `SITE_URL` to
+another bare origin, such as `https://example.com`, to override it, and the build fails on anything
+else. The waitlist link is `TELEGRAM_URL` in [`src/lib/site.ts`](src/lib/site.ts).
 
 ## License
 

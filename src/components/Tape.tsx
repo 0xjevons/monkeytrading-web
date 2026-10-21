@@ -5,28 +5,24 @@
 import { useState } from "react";
 
 import { groupThousands, shortHex } from "@/lib/format";
-import { createTape, tapeWindow, type TapeEntry } from "@/lib/tape";
+import { SEED } from "@/lib/prng";
+import { createTape, TAPE_FIRST_SEQ, TAPE_ROWS, TAPE_STEP_MS, tapeWindow, type TapeEntry } from "@/lib/tape";
 
 import { MotionToggle, useMotion, useTicker } from "./motion";
 
-const SEED = 1871;
-const FIRST_SEQ = 48_201;
-const ROWS = 13;
-const STEP_MS = 1100;
-
-/** The log panel; a new command arrives every `STEP_MS` while motion is on. */
+/** The log panel; a new command arrives every `TAPE_STEP_MS` while motion is on. */
 export function Tape() {
   // The tape and its first rows come from one initializer, so a discarded StrictMode call advances
   // only its own tape.
   const [{ tape, initial }] = useState(() => {
-    const fresh = createTape(SEED, FIRST_SEQ);
-    return { tape: fresh, initial: tapeWindow(fresh, ROWS) };
+    const fresh = createTape(SEED, TAPE_FIRST_SEQ);
+    return { tape: fresh, initial: tapeWindow(fresh, TAPE_ROWS) };
   });
   const [state, setState] = useState(() => ({ entries: initial, added: 0 }));
   const [motion, setMotion] = useMotion();
-  const ref = useTicker<HTMLDivElement>(STEP_MS, motion, () => {
+  const ref = useTicker<HTMLDivElement>(TAPE_STEP_MS, motion, () => {
     const next = tape.next();
-    setState((s) => ({ entries: [...s.entries, ...next].slice(-ROWS), added: next.length }));
+    setState((s) => ({ entries: [...s.entries, ...next].slice(-TAPE_ROWS), added: next.length }));
   });
 
   const last = state.entries[state.entries.length - 1];
@@ -70,7 +66,10 @@ export function Tape() {
  * width a line takes two rows.
  */
 function TapeRow({ entry, fresh }: { entry: TapeEntry; fresh: boolean }) {
-  const enter = fresh ? "animate-row-in" : "";
+  // A new row slides in while a tint over it fades: transform and opacity only.
+  const enter = fresh
+    ? "relative animate-row-in before:pointer-events-none before:absolute before:inset-0 before:bg-glow/14 before:opacity-0 before:animate-row-flash"
+    : "";
   if (entry.kind === "checkpoint") {
     return (
       <li

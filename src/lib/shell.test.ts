@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { COMMANDS, MAX_INPUT, runShell, type Line } from "./shell";
+import { COMMANDS, MAX_INPUT, recall, runShell, type Line, type Recall } from "./shell";
 import { TELEGRAM_URL } from "./site";
 
 /** The lines' text, with links as their labels. */
@@ -18,6 +18,7 @@ describe("runShell", () => {
   it("links the waitlist from join", () => {
     const links = runShell("join").lines.flatMap((l) => l.parts).filter((p) => typeof p !== "string");
     expect(links).toEqual([{ href: TELEGRAM_URL, label: TELEGRAM_URL.replace("https://", "") }]);
+    expect(text(runShell("join").lines)).toBe(`Join the waitlist on Telegram: ${TELEGRAM_URL.replace("https://", "")}`);
   });
 
   it("moves to a section, and clears, on request", () => {
@@ -39,5 +40,46 @@ describe("runShell", () => {
     const out = runShell("x".repeat(MAX_INPUT + 50)).lines;
     expect(out[0]).toEqual({ tone: "alarm", parts: [`command not found: ${"x".repeat(MAX_INPUT)}`] });
     expect(runShell(`${" ".repeat(MAX_INPUT)}help`)).toEqual({ lines: [] });
+  });
+});
+
+describe("runShell status", () => {
+  it("names each item the way the page's status board does", () => {
+    const out = text(runShell("status").lines).split("\n");
+    expect(out[0]).toBe("runs locally  Engine core");
+    expect(out.some((l) => l.startsWith("in build      MONKEY token"))).toBe(true);
+    expect(out[out.length - 1]).toBe("Pre-launch. Nothing holds real funds.");
+  });
+});
+
+describe("recall", () => {
+  const history = ["help", "rules", "status"];
+  const typing: Recall = { cursor: null, draft: "", value: "sta" };
+
+  it("steps back through history, saving the typed line, and stops at the oldest entry", () => {
+    const first = recall(history, typing, "up");
+    expect(first).toEqual({ cursor: 2, draft: "sta", value: "status" });
+    const second = first && recall(history, first, "up");
+    expect(second).toEqual({ cursor: 1, draft: "sta", value: "rules" });
+    const oldest = recall(history, { cursor: 0, draft: "sta", value: "help" }, "up");
+    expect(oldest).toEqual({ cursor: 0, draft: "sta", value: "help" });
+  });
+
+  it("steps forward, and past the newest entry restores the typed line", () => {
+    expect(recall(history, { cursor: 1, draft: "sta", value: "rules" }, "down")).toEqual({
+      cursor: 2,
+      draft: "sta",
+      value: "status",
+    });
+    expect(recall(history, { cursor: 2, draft: "sta", value: "status" }, "down")).toEqual({
+      cursor: null,
+      draft: "",
+      value: "sta",
+    });
+  });
+
+  it("leaves the typed line alone on Down, and does nothing without history", () => {
+    expect(recall(history, typing, "down")).toBeNull();
+    expect(recall([], typing, "up")).toBeNull();
   });
 });

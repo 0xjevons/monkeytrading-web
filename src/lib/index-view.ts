@@ -24,6 +24,14 @@ export interface VenueRow {
   apart: boolean;
 }
 
+/** The sparkline's drawing: polylines through the prices, and the runs of ticks with no price. */
+export interface Sparkline {
+  /** One polyline per unbroken run of prices, keyed by its first slot. */
+  segments: { start: number; points: string }[];
+  /** First and last slot of each run with no price, inclusive. */
+  gaps: [number, number][];
+}
+
 const MIN_HALF_BPS = 6;
 const MAX_HALF_BPS = 80;
 
@@ -71,15 +79,6 @@ export function nextView(view: LineView, frame: SimFrame): LineView {
 export function linePosition(view: LineView, mid: number): number {
   const offset = ((mid - view.anchor) / view.anchor) * 10_000;
   return Math.min(98, Math.max(2, 50 + (offset / view.halfBps) * 50));
-}
-
-
-/** The sparkline's drawing: polylines through the prices, and the runs of ticks with no price. */
-export interface Sparkline {
-  /** One polyline per unbroken run of prices, keyed by its first slot. */
-  segments: { start: number; points: string }[];
-  /** First and last slot of each run with no price, inclusive. */
-  gaps: [number, number][];
 }
 
 /**

@@ -15,16 +15,16 @@ import {
   VENUES,
   type IndexOutcome,
 } from "@/lib/price-index";
+import { SEED } from "@/lib/prng";
+import { unreachable } from "@/lib/unreachable";
 
 import { MotionToggle, useMotion, useTicker } from "./motion";
 
-export const SIM_SEED = 1871;
-
-const GRID = "grid grid-cols-[1fr_auto_4.25rem_auto] gap-x-3 @[30rem]:grid-cols-[1fr_auto_5rem_5.5rem_4.5rem]";
+const GRID = "grid grid-cols-[1fr_auto_4.25rem_auto] gap-x-3 @[30rem]:grid-cols-[1fr_auto_5rem_6rem_4.5rem]";
 
 /** The panel: a venue table, the number line, the index with its history, and a pause control. */
 export function IndexPanel() {
-  const [sim] = useState(() => createIndexSim(SIM_SEED));
+  const [sim] = useState(() => createIndexSim(SEED));
   const [{ frame, view }, setState] = useState(() => ({ frame: sim.initial, view: initialView(sim.initial) }));
   const [motion, setMotion] = useMotion();
   const ref = useTicker<HTMLDivElement>(SIM_TICK_MS, motion, () => {
@@ -82,7 +82,14 @@ export function IndexPanel() {
                 <span className={fresh ? "text-fg-3" : "text-amber"}> ms</span>
               </span>
               <span className={`hidden text-right @[30rem]:block ${apart ? "text-alarm" : "text-fg-2"}`}>
-                {offsetTenthBps === null ? "—" : formatSigned(offsetTenthBps, 1)}
+                {offsetTenthBps === null ? (
+                  "—"
+                ) : (
+                  <>
+                    {formatSigned(offsetTenthBps, 1)}
+                    <span className="text-fg-3"> bps</span>
+                  </>
+                )}
               </span>
               <span
                 className={`flex items-center justify-end gap-1.5 text-xs ${!fresh ? "text-amber" : apart ? "text-alarm" : "text-glow"}`}
@@ -169,14 +176,18 @@ export function IndexPanel() {
       </div>
 
       <div className="border-t border-line px-4 py-3 text-caption leading-relaxed text-fg-3 @[30rem]:px-5">
-        Simulated quotes, seed {SIM_SEED}. Rules: quotes at most {groupThousands(SIM_RULES.maxAgeMs)} ms old, at least{" "}
+        Simulated quotes, seed {SEED}. Rules: quotes at most {groupThousands(SIM_RULES.maxAgeMs)} ms old, at least{" "}
         {SIM_RULES.minSources} venues, spread at most {SIM_RULES.maxDivergenceBps} bps.
       </div>
     </div>
   );
 }
 
-/** The line under the index that says why it has, or has no, price. */
+/**
+ * The line under the index that says why it has, or has no, price.
+ * Error cases:
+ * - an index status outside `IndexOutcome`
+ */
 function indexNote(index: IndexOutcome): string {
   const stale = VENUES.filter((v) => !index.used.includes(v)).map((v) => VENUE_NAMES[v]);
   switch (index.status) {
@@ -188,10 +199,8 @@ function indexNote(index: IndexOutcome): string {
       return `Venues ${index.divergenceBps} bps apart, past the ${SIM_RULES.maxDivergenceBps} bps limit. Nothing fills.`;
     case "stale":
       return "Too few fresh quotes. Nothing fills.";
-    default: {
-      const unhandled: never = index;
-      throw new Error(`IndexPanel: unhandled index ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(index, "indexNote");
   }
 }
 

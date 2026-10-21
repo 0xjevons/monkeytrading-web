@@ -74,6 +74,12 @@ export interface StatusItem {
   detail: string;
 }
 
+/** How the page and the shell name each status. */
+export const STATUS_LABELS: Readonly<Record<StatusItem["state"], string>> = {
+  running: "Runs locally",
+  building: "In build",
+};
+
 export const STATUS: readonly StatusItem[] = [
   {
     name: "Engine core",
