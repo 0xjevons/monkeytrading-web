@@ -203,7 +203,7 @@ accepted Critical, High, and Medium finding is fixed by class before the next ro
   `main` changes how the PR's changes behave; the rebased commit then stands in for the reviewed
   one.
 - **Critical and High have no round cap.** Keep fixing and re-reviewing until a round accepts none.
-- **Mediums get at most five rounds.** If any round numbered 5 or later — including one in a
+- **Mediums get at most three rounds.** If any round numbered 3 or later — including one in a
   reopened loop — ends with no Critical or High but with Mediums remaining, stop. Report the
   remaining Mediums to the owner, each with its title, `file:line`, and scenario, and ask for
   consent to downgrade them to Low. With that consent, record each downgraded finding in the fix
