@@ -1,3 +1,5 @@
+/** The sticky header: the mark, the in-page sections, and the waitlist link. */
+
 import { GITHUB_URL, TELEGRAM_URL } from "@/lib/site";
 
 import { LogoMark } from "./Logo";
@@ -10,6 +12,7 @@ const NAV = [
   ["Status", "#status"],
 ] as const;
 
+/** The page header; the section links show from the `md` breakpoint up. */
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-ink/80 backdrop-blur-md">

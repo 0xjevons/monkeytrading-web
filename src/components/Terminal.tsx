@@ -1,10 +1,14 @@
 "use client";
 
+/** The shell: a labelled prompt that reads a few commands and prints the house's answers. */
+
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
-import { runShell, type Line, type Tone } from "@/lib/shell";
+import { MAX_INPUT, runShell, type Line, type Tone } from "@/lib/shell";
 
-const PROMPT = "guest@house:~$";
+const PROMPT_HOST = "guest@house:";
+const PROMPT_PATH = "~$";
+const PROMPT = `${PROMPT_HOST}${PROMPT_PATH}`;
 const MAX_LINES = 60;
 
 const TONES: Record<Tone, string> = {
@@ -24,6 +28,7 @@ const WELCOME: Line[] = [
   { tone: "muted", parts: ["Try help, rules, replay, or join."] },
 ];
 
+/** The shell panel: output above, a labelled input below, with Up and Down to recall earlier lines. */
 export function Terminal() {
   const inputId = useId();
   const [value, setValue] = useState("");
@@ -67,8 +72,8 @@ export function Terminal() {
   };
 
   return (
-    <div className="panel scanlines overflow-hidden">
-      <div className="flex items-center justify-between border-b border-line px-4 py-3 text-xs tracking-[0.12em] uppercase sm:px-5">
+    <div className="panel scanlines @container overflow-hidden">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3 text-xs tracking-caps uppercase @[30rem]:px-5">
         <span className="text-fg">Shell</span>
         <span className="text-fg-3">read-only</span>
       </div>
@@ -77,7 +82,7 @@ export function Terminal() {
         role="log"
         aria-live="polite"
         aria-label="Shell output"
-        className="h-52 overflow-y-auto px-4 py-4 text-[0.8125rem] leading-relaxed sm:h-64 sm:px-5"
+        className="h-52 overflow-y-auto px-4 py-4 text-data leading-relaxed @[30rem]:h-64 @[30rem]:px-5"
       >
         {entries.map(({ id, line }) => (
           <p key={id} className={`whitespace-pre-wrap break-words ${TONES[line.tone]}`}>
@@ -98,9 +103,12 @@ export function Terminal() {
           </p>
         ))}
       </div>
-      <form onSubmit={submit} className="flex items-center gap-3 border-t border-line px-4 py-3 sm:px-5">
-        <label htmlFor={inputId} className="shrink-0 text-[0.8125rem] text-glow">
-          <span aria-hidden="true">{PROMPT}</span>
+      <form onSubmit={submit} className="flex items-center gap-3 border-t border-line px-4 py-3 @[30rem]:px-5">
+        <label htmlFor={inputId} className="shrink-0 text-data text-glow">
+          <span aria-hidden="true">
+            <span className="hidden @[24rem]:inline">{PROMPT_HOST}</span>
+            {PROMPT_PATH}
+          </span>
           <span className="sr-only">Command</span>
         </label>
         <input
@@ -113,8 +121,9 @@ export function Terminal() {
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="send"
+          maxLength={MAX_INPUT}
           placeholder="help"
-          className="min-w-0 flex-1 rounded border border-edge bg-ink px-2 py-1.5 text-base text-fg caret-glow placeholder:text-fg-3 focus-visible:outline-offset-1 sm:text-[0.8125rem]"
+          className="min-w-0 flex-1 rounded border border-edge bg-ink px-2 py-1.5 text-base text-fg caret-glow placeholder:text-fg-3 focus-visible:outline-offset-1 @[30rem]:text-data"
         />
         <button
           type="submit"

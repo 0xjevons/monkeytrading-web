@@ -1,36 +1,45 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+/** The replay demo: tamper with a published log, replay it in the browser, and see where it diverges. */
+
+import { useEffect, useId, useState } from "react";
 
 import { shortHex } from "@/lib/format";
-import { describeCommand, replay, type ReplayResult } from "@/lib/replay";
+import { describeCommand, replay, type ReplayResult, type ReplayStep } from "@/lib/replay";
 import { DEMO_LOG, TAMPERS, tamperLog } from "@/lib/replay-log";
 
 import { useMotion } from "./motion";
 
 const STEP_MS = 170;
+const COLUMNS = "@[44rem]:grid-cols-[2rem_minmax(0,1fr)_minmax(0,14rem)_8.5rem_1rem]";
 
+/**
+ * The demo panel. With motion on, a replay reveals one step every `STEP_MS`; with motion off it
+ * shows every step at once, and pausing mid-run shows the rest.
+ */
 export function ReplayDemo() {
-  const [tamperId, setTamperId] = useState<string>("none");
-  const [run, setRun] = useState<{ result: ReplayResult; shown: number } | null>(null);
+  const [tamperId, setTamperId] = useState("none");
+  const [run, setRun] = useState<{ result: ReplayResult; revealed: number } | null>(null);
   const [motion] = useMotion();
   const groupName = useId();
 
   const tamper = TAMPERS.find((t) => t.id === tamperId) ?? null;
-  const log = useMemo(() => (tamper ? tamperLog(DEMO_LOG, tamper) : [...DEMO_LOG]), [tamper]);
-
+  const log = tamper ? tamperLog(DEMO_LOG, tamper) : DEMO_LOG;
   const total = run?.result.steps.length ?? 0;
-  const done = run !== null && run.shown >= total;
+  // Pausing mid-run finishes the reveal; it stays finished if motion comes back on.
+  if (run && !motion && run.revealed < total) setRun({ ...run, revealed: total });
+  const shown = run?.revealed ?? 0;
+  const done = run !== null && shown >= total;
 
   useEffect(() => {
-    if (!run || run.shown >= run.result.steps.length) return;
-    const timer = window.setTimeout(() => setRun({ ...run, shown: run.shown + 1 }), STEP_MS);
+    if (!run || !motion || run.revealed >= run.result.steps.length) return;
+    const timer = window.setTimeout(() => setRun({ ...run, revealed: run.revealed + 1 }), STEP_MS);
     return () => window.clearTimeout(timer);
-  }, [run]);
+  }, [run, motion]);
 
   const start = () => {
     const result = replay(log);
-    setRun({ result, shown: motion ? 0 : result.steps.length });
+    setRun({ result, revealed: motion ? 0 : result.steps.length });
   };
 
   const choose = (id: string) => {
@@ -39,10 +48,10 @@ export function ReplayDemo() {
   };
 
   return (
-    <div className="panel overflow-hidden">
-      <div className="flex flex-col gap-4 border-b border-line px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
+    <div className="panel @container overflow-hidden">
+      <div className="flex flex-col gap-4 border-b border-line px-4 py-4 @[30rem]:px-5 @[44rem]:flex-row @[44rem]:items-end @[44rem]:justify-between">
         <fieldset className="min-w-0">
-          <legend className="mb-2.5 text-[0.6875rem] tracking-[0.16em] text-fg-3 uppercase">
+          <legend className="mb-2.5 text-caption tracking-label text-fg-3 uppercase">
             1 · Tamper with the log, or don&apos;t
           </legend>
           <div className="flex flex-wrap gap-2">
@@ -65,11 +74,11 @@ export function ReplayDemo() {
           </div>
         </fieldset>
         <div className="flex shrink-0 flex-col gap-2.5">
-          <span className="text-[0.6875rem] tracking-[0.16em] text-fg-3 uppercase">2 · Replay it</span>
+          <span className="text-caption tracking-label text-fg-3 uppercase">2 · Replay it</span>
           <button
             type="button"
             onClick={start}
-            className="inline-flex items-center justify-center gap-2 rounded bg-glow px-4 py-2 text-sm font-medium text-ink shadow-[0_0_24px_-4px_var(--color-glow)] transition hover:bg-[#8affc0]"
+            className="inline-flex items-center justify-center gap-2 rounded bg-glow px-4 py-2 text-sm font-medium text-ink shadow-glow transition-colors hover:bg-glow-hover"
           >
             <span aria-hidden="true">▶</span>
             {run === null ? "Replay the log" : "Replay again"}
@@ -78,7 +87,7 @@ export function ReplayDemo() {
       </div>
 
       {tamper && (
-        <p className="border-b border-line bg-alarm/[0.06] px-4 py-2.5 text-xs text-fg-2 sm:px-5">
+        <p className="border-b border-line bg-alarm/6 px-4 py-2.5 text-xs text-fg-2 @[30rem]:px-5">
           <span className="text-alarm">Edited seq {tamper.seq}:</span> {tamper.change}. The published roots are
           untouched.
         </p>
@@ -86,7 +95,7 @@ export function ReplayDemo() {
 
       <div
         aria-hidden="true"
-        className="hidden grid-cols-[2rem_minmax(0,1fr)_minmax(0,14rem)_8.5rem_1rem] gap-x-3 border-b border-line px-5 py-2 text-[0.625rem] tracking-[0.16em] text-fg-3 uppercase md:grid"
+        className={`hidden gap-x-3 border-b border-line px-5 py-2 text-label tracking-label text-fg-3 uppercase @[44rem]:grid ${COLUMNS}`}
       >
         <span>Seq</span>
         <span>Command</span>
@@ -96,35 +105,30 @@ export function ReplayDemo() {
       </div>
       <ol className="divide-y divide-line text-xs" aria-label="Published log">
         {log.map((entry, i) => {
-          const step = run && i < run.shown ? run.result.steps[i] : undefined;
-          const unreached = run !== null && done && i >= total;
+          const step = i < shown ? run?.result.steps[i] : undefined;
+          const refused = done && run?.result.ok === false && run.result.kind === "refused" && run.result.divergedAt === entry.seq;
+          const unreached = done && !refused && i >= total;
           const edited = tamper?.seq === entry.seq;
           return (
             <li
               key={entry.seq}
-              className={`grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 gap-y-1 px-4 py-2.5 sm:px-5 md:grid-cols-[2rem_minmax(0,1fr)_minmax(0,14rem)_8.5rem_1rem] md:items-center ${
-                unreached ? "opacity-40" : ""
-              } ${step && !step.matches ? "bg-alarm/[0.08]" : ""}`}
+              className={`grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 gap-y-1 px-4 py-2.5 @[30rem]:px-5 @[44rem]:items-center ${COLUMNS} ${
+                (step && !step.matches) || refused ? "bg-alarm/8" : ""
+              }`}
             >
               <span className="text-fg-3 tabular-nums">
                 <span className="sr-only">seq </span>
                 {String(entry.seq).padStart(2, "0")}
               </span>
-              <span className={`min-w-0 break-words ${edited ? "text-alarm" : "text-fg"}`}>
+              <span className={`min-w-0 break-words ${edited ? "text-alarm" : unreached ? "text-fg-3" : "text-fg"}`}>
                 {describeCommand(entry.command)}
-                {edited && <span className="ml-2 rounded-sm border border-alarm/50 px-1 text-[0.625rem] uppercase">edited</span>}
-              </span>
-              <span className={`col-start-2 min-w-0 truncate text-fg-2 md:col-auto ${step || unreached ? "" : "hidden md:inline"}`}>
-                {step ? (
-                  <>
-                    <span className="sr-only">result: </span>→ {step.event}
-                  </>
-                ) : (
-                  <span className="text-fg-3">{unreached ? "not reached" : "·"}</span>
+                {edited && (
+                  <span className="ml-2 rounded-sm border border-alarm/50 px-1 text-label uppercase">edited</span>
                 )}
               </span>
-              <div className="col-start-2 flex items-start justify-between gap-3 md:contents">
-                <span className="tabular-nums md:text-right">
+              <Outcome step={step} refused={refused ? run?.result : undefined} unreached={unreached} />
+              <div className="col-start-2 flex items-start justify-between gap-3 @[44rem]:contents">
+                <span className="tabular-nums @[44rem]:text-right">
                   <span className="text-fg-3">
                     <span className="sr-only">published root </span>
                     {shortHex(entry.root)}
@@ -136,7 +140,7 @@ export function ReplayDemo() {
                     </span>
                   )}
                 </span>
-                <span className="md:text-right">
+                <span className="@[44rem]:text-right">
                   {step &&
                     (step.matches ? (
                       <span className="text-glow">
@@ -154,7 +158,7 @@ export function ReplayDemo() {
         })}
       </ol>
 
-      <div aria-live="polite" className="border-t border-line px-4 py-4 text-sm sm:px-5">
+      <div aria-live="polite" className="border-t border-line px-4 py-4 text-sm @[30rem]:px-5">
         {!run && (
           <p className="text-fg-2">
             {DEMO_LOG.length} commands, {DEMO_LOG.length} published roots. Press replay to recompute them in your
@@ -170,11 +174,36 @@ export function ReplayDemo() {
         )}
         {run && done && !run.result.ok && (
           <div className="space-y-2">
-            <p className="text-alarm">✗ Root diverges at seq {run.result.divergedAt}. The replay stops there.</p>
-            <p className="font-mono text-xs break-all text-fg-2">{run.result.message}</p>
+            <p className="text-alarm">
+              ✗ {run.result.kind === "mismatch" ? "Root diverges" : "Replay refused"} at seq {run.result.divergedAt}. The
+              replay stops there.
+            </p>
+            <p className="text-xs break-all text-fg-2">{run.result.message}</p>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/** A row's replayed outcome: the event, the refusal, or that the replay never reached it. */
+function Outcome({
+  step,
+  refused,
+  unreached,
+}: {
+  step: ReplayStep | undefined;
+  /** The failed replay, when it stopped on this row's command. */
+  refused: ReplayResult | undefined;
+  unreached: boolean;
+}) {
+  const text = step ? `→ ${step.event}` : refused && !refused.ok ? refused.message : unreached ? "not reached" : "·";
+  const tone = refused ? "text-alarm" : step ? "text-fg-2" : "text-fg-3";
+  const visible = step || refused || unreached ? "" : "hidden @[44rem]:inline";
+  return (
+    <span className={`col-start-2 min-w-0 truncate @[44rem]:col-auto ${tone} ${visible}`}>
+      {step && <span className="sr-only">result: </span>}
+      {text}
+    </span>
   );
 }

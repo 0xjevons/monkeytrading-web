@@ -1,11 +1,18 @@
+/** The replay demo's published log, its roots, and the edits a visitor can make to it. */
+
 import type { Command, LogEntry } from "./replay";
+
+export interface Tamper {
+  id: string;
+  label: string;
+  seq: number;
+  /** What changed, as `before → after`. */
+  change: string;
+  edit: (command: Command) => Command;
+}
 
 const A = "0x00a1";
 const B = "0x00b2";
-
-function prices(binance: number, coinbase: number, kraken: number): Command {
-  return { type: "prices", market: "BTC-USD", quotes: { binance, coinbase, kraken } };
-}
 
 /** The demo's published log: each command with the state root published after it. */
 export const DEMO_LOG: readonly LogEntry[] = [
@@ -66,15 +73,6 @@ export const DEMO_LOG: readonly LogEntry[] = [
   },
 ];
 
-export interface Tamper {
-  id: string;
-  label: string;
-  seq: number;
-  /** What changed, as `before → after`. */
-  change: string;
-  edit: (command: Command) => Command;
-}
-
 /** Edits a visitor can make to the log. Each changes one value and leaves the published roots alone. */
 export const TAMPERS: readonly Tamper[] = [
   {
@@ -110,4 +108,9 @@ export const TAMPERS: readonly Tamper[] = [
 /** `log` with `tamper` applied to its command; the published roots are unchanged. */
 export function tamperLog(log: readonly LogEntry[], tamper: Tamper): LogEntry[] {
   return log.map((entry) => (entry.seq === tamper.seq ? { ...entry, command: tamper.edit(entry.command) } : entry));
+}
+
+/** A BTC-USD prices command with each venue's quote, in cents. */
+function prices(binance: number, coinbase: number, kraken: number): Command {
+  return { type: "prices", market: "BTC-USD", quotes: { binance, coinbase, kraken } };
 }

@@ -1,9 +1,3 @@
-import { keccak_256 } from "@noble/hashes/sha3.js";
-import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
-
-import { formatCents, formatMilli } from "./format";
-import { computeIndex, VENUES, type Quotes, type Venue } from "./price-index";
-
 /**
  * A miniature of the engine's audit: a deterministic state machine, a log of sequenced commands,
  * and a keccak-256 root of the whole state after each one. Replaying the log from an empty state
@@ -14,6 +8,12 @@ import { computeIndex, VENUES, type Quotes, type Venue } from "./price-index";
  * Amounts are integer cents and quantities integer thousandths, so every machine computes the same
  * bytes.
  */
+
+import { keccak_256 } from "@noble/hashes/sha3.js";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+
+import { formatCents, formatMilli, formatSigned } from "./format";
+import { computeIndex, VENUES, type IndexOutcome, type Quotes, type Venue } from "./price-index";
 
 export type Side = "buy" | "sell";
 
@@ -53,100 +53,138 @@ export interface DemoState {
   accounts: Record<string, Account>;
 }
 
+/** The outcome of applying one command: the new state and what happened, or why it was refused. */
+export type Applied = { ok: true; state: DemoState; event: string } | { ok: false; error: string };
+
+export interface ReplayStep {
+  seq: number;
+  event: string;
+  /** The root the replay computed. */
+  root: string;
+  /** The root the log published. */
+  published: string;
+  matches: boolean;
+}
+
+/**
+ * A replay's outcome. A failed one stops at `divergedAt`: on a root that differs (`mismatch`, the
+ * last step), or on a command the rules refuse (`refused`, with no step of its own).
+ */
+export type ReplayResult =
+  | { ok: true; steps: ReplayStep[] }
+  | { ok: false; kind: "mismatch" | "refused"; steps: ReplayStep[]; divergedAt: number; message: string };
+
+/** The state before the first command. */
 export function emptyState(): DemoState {
   return { last_seq: null, markets: {}, accounts: {} };
 }
-
-/** A command the rules refuse: the log cannot be applied past it. */
-export class ReplayError extends Error {}
 
 /** JSON with object keys sorted at every level, so equal states always encode to equal bytes. */
 export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  const entries = Object.entries(value as Record<string, unknown>)
+  const fields: [string, unknown][] = Object.entries(value);
+  const entries = fields
     .filter(([, v]) => v !== undefined)
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
 }
 
-/** `0x`-prefixed keccak-256 of the state's canonical encoding. */
+/**
+ * `0x`-prefixed keccak-256 of the state's canonical encoding: the engine's `Engine::state_root`
+ * hashes its serialized state with keccak-256 the same way, over a different encoding.
+ */
 export function stateRoot(state: DemoState): string {
   return `0x${bytesToHex(keccak_256(utf8ToBytes(canonicalJson(state))))}`;
 }
 
 /**
  * Applies one sequenced command and returns the new state with a one-line account of what
- * happened. The input state is left untouched.
- * Error cases:
+ * happened; the input state is left untouched. A command the rules cannot apply is refused, with
+ * the reason, and changes nothing:
  * - a seq other than the one after the last applied
  * - a command naming an unlisted market, an already listed one, or an unfunded account
  * - an amount, quote, or quantity that is not a positive integer
  */
-export function applyCommand(prev: DemoState, seq: number, command: Command): { state: DemoState; event: string } {
+export function applyCommand(prev: DemoState, seq: number, command: Command): Applied {
   const expected = prev.last_seq === null ? 1 : prev.last_seq + 1;
-  if (seq !== expected) throw new ReplayError(`seq ${seq} out of sequence: expected ${expected}`);
+  if (seq !== expected) return refuse(`seq ${seq} out of sequence: expected ${expected}`);
   const state: DemoState = structuredClone(prev);
   state.last_seq = seq;
 
   switch (command.type) {
     case "list_market": {
-      if (state.markets[command.market]) throw new ReplayError(`${command.market} is already listed`);
-      requirePositive(command.min_sources, "min_sources");
-      requirePositive(command.max_divergence_bps, "max_divergence_bps");
+      if (state.markets[command.market]) return refuse(`${command.market} is already listed`);
+      const invalid =
+        notPositive(command.min_sources, "min_sources") ??
+        notPositive(command.max_divergence_bps, "max_divergence_bps");
+      if (invalid) return refuse(invalid);
       state.markets[command.market] = {
         max_divergence_bps: command.max_divergence_bps,
         min_sources: command.min_sources,
         quotes: {},
         index: null,
       };
-      return { state, event: `${command.market} listed` };
+      return { ok: true, state, event: `${command.market} listed` };
     }
     case "deposit": {
-      requirePositive(command.amount, "amount");
+      const invalid = notPositive(command.amount, "amount");
+      if (invalid) return refuse(invalid);
       const account = (state.accounts[command.account] ??= { balance: 0, positions: {} });
       account.balance += command.amount;
-      return { state, event: `credited ${formatCents(command.amount)} USDC` };
+      return { ok: true, state, event: `credited ${formatCents(command.amount)} USDC` };
     }
     case "prices": {
-      const market = requireMarket(state, command.market);
-      for (const venue of VENUES) requirePositive(command.quotes[venue], `${venue} quote`);
+      const market = state.markets[command.market];
+      if (!market) return refuse(`${command.market} is not listed`);
+      const invalid = VENUES.map((v) => notPositive(command.quotes[v], `${v} quote`)).find((e) => e !== null);
+      if (invalid) return refuse(invalid);
       market.quotes = { ...command.quotes };
-      const quotes = Object.fromEntries(VENUES.map((v) => [v, { mid: command.quotes[v], ts: 0 }])) as Quotes;
-      const index = computeIndex(
-        quotes,
-        { maxAgeMs: 0, maxDivergenceBps: market.max_divergence_bps, minSources: market.min_sources },
-        0,
-      );
-      if (index.status === "price") {
-        market.index = index.mid;
-        return { state, event: `index ${formatCents(index.mid)}` };
-      }
-      market.index = null;
-      return {
-        state,
-        event:
-          index.status === "divergent"
-            ? `no price: quotes ${index.divergenceBps} bps apart`
-            : `no price: ${index.used.length} of ${index.needed} quotes`,
+      // Every quote in a prices command arrives at its seq, so all are fresh.
+      const quotes: Quotes = {
+        binance: { mid: command.quotes.binance, ts: 0 },
+        coinbase: { mid: command.quotes.coinbase, ts: 0 },
+        kraken: { mid: command.quotes.kraken, ts: 0 },
       };
+      const rules = { maxAgeMs: 0, maxDivergenceBps: market.max_divergence_bps, minSources: market.min_sources };
+      const index = computeIndex(quotes, rules, 0);
+      market.index = index.status === "price" ? index.mid : null;
+      return { ok: true, state, event: describeIndex(index) };
     }
     case "order": {
-      const market = requireMarket(state, command.market);
-      requirePositive(command.qty, "qty");
+      const market = state.markets[command.market];
+      if (!market) return refuse(`${command.market} is not listed`);
+      const invalid = notPositive(command.qty, "qty");
+      if (invalid) return refuse(invalid);
       const account = state.accounts[command.account];
-      if (!account) throw new ReplayError(`${command.account} has no balance`);
-      if (market.index === null) return { state, event: "rejected: no price" };
+      if (!account) return refuse(`${command.account} has no balance`);
+      if (market.index === null) return { ok: true, state, event: "rejected: no price" };
       const price = market.index;
       const delta = command.side === "buy" ? command.qty : -command.qty;
       const realised = trade(account, command.market, delta, price);
       const fill = `filled ${formatMilli(command.qty)} @ ${formatCents(price)}`;
-      return { state, event: realised === 0 ? fill : `${fill}, realised ${signedCents(realised)}` };
+      return { ok: true, state, event: realised === 0 ? fill : `${fill}, realised ${formatSigned(realised, 2)}` };
     }
+    default:
+      return unreachable(command);
   }
 }
 
-/** Moves a position by `delta` thousandths at `price` and returns the profit or loss realised. */
+/** The event text for a prices command's index. */
+function describeIndex(index: IndexOutcome): string {
+  switch (index.status) {
+    case "price":
+      return `index ${formatCents(index.mid)}`;
+    case "divergent":
+      return `no price: quotes ${index.divergenceBps} bps apart`;
+    case "stale":
+      return `no price: ${index.used.length} of ${index.needed} quotes`;
+    default:
+      return unreachable(index);
+  }
+}
+
+/** Moves a position by `delta` thousandths at `price` and returns the profit or loss realised, in cents. */
 function trade(account: Account, market: string, delta: number, price: number): number {
   const pos = account.positions[market] ?? { qty: 0, entry: 0 };
   let realised = 0;
@@ -169,35 +207,24 @@ function trade(account: Account, market: string, delta: number, price: number): 
   return realised;
 }
 
-function requireMarket(state: DemoState, market: string): Market {
-  const found = state.markets[market];
-  if (!found) throw new ReplayError(`${market} is not listed`);
-  return found;
+/** A refusal with its reason. */
+function refuse(error: string): Applied {
+  return { ok: false, error };
 }
 
-function requirePositive(value: number | undefined, name: string): void {
-  if (value === undefined || !Number.isSafeInteger(value) || value <= 0) {
-    throw new ReplayError(`${name} must be a positive integer`);
-  }
+/** Why `value` is not a positive safe integer, or `null` when it is. */
+function notPositive(value: number | undefined, name: string): string | null {
+  return value === undefined || !Number.isSafeInteger(value) || value <= 0 ? `${name} must be a positive integer` : null;
 }
 
-function signedCents(cents: number): string {
-  return cents > 0 ? `+${formatCents(cents)}` : formatCents(cents);
+/**
+ * Marks a switch as exhaustive: the type checker rejects a call while any member is unhandled.
+ * Error cases:
+ * - reached at run time, which only a value outside its declared type can do
+ */
+function unreachable(value: never): never {
+  throw new Error(`replay: unhandled value ${JSON.stringify(value)}`);
 }
-
-export interface ReplayStep {
-  seq: number;
-  event: string;
-  /** The root the replay computed. */
-  root: string;
-  /** The root the log published. */
-  published: string;
-  matches: boolean;
-}
-
-export type ReplayResult =
-  | { ok: true; steps: ReplayStep[] }
-  | { ok: false; steps: ReplayStep[]; divergedAt: number; message: string };
 
 /**
  * Re-applies `log` from an empty state and checks each published root, stopping at the first
@@ -208,19 +235,19 @@ export function replay(log: readonly LogEntry[]): ReplayResult {
   let state = emptyState();
   const steps: ReplayStep[] = [];
   for (const entry of log) {
-    let event: string;
-    try {
-      ({ state, event } = applyCommand(state, entry.seq, entry.command));
-    } catch (err) {
-      if (!(err instanceof ReplayError)) throw err;
-      return { ok: false, steps, divergedAt: entry.seq, message: `applying seq ${entry.seq}: ${err.message}` };
+    const applied = applyCommand(state, entry.seq, entry.command);
+    if (!applied.ok) {
+      const message = `applying seq ${entry.seq}: ${applied.error}`;
+      return { ok: false, kind: "refused", steps, divergedAt: entry.seq, message };
     }
+    state = applied.state;
     const root = stateRoot(state);
     const matches = root === entry.root;
-    steps.push({ seq: entry.seq, event, root, published: entry.root, matches });
+    steps.push({ seq: entry.seq, event: applied.event, root, published: entry.root, matches });
     if (!matches) {
       return {
         ok: false,
+        kind: "mismatch",
         steps,
         divergedAt: entry.seq,
         message: `state root mismatch at seq ${entry.seq}: log says ${entry.root}, replay gives ${root}`,
@@ -241,5 +268,7 @@ export function describeCommand(command: Command): string {
       return `prices ${command.market}: ${VENUES.map((v) => `${v} ${formatCents(command.quotes[v])}`).join(", ")}`;
     case "order":
       return `order ${command.account} ${command.side} ${formatMilli(command.qty)} ${command.market}`;
+    default:
+      return unreachable(command);
   }
 }

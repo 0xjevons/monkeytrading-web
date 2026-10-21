@@ -17,11 +17,12 @@ current action.
   `apple-icon.png`, and the static `opengraph-image.png` and `twitter-image.png` (1200 × 630) with
   their `.alt.txt`.
 - **src/components/** — React components: the simulated panels `IndexPanel` (the median index),
-  `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); `Header`, `Footer`, and
-  `Logo`; and `motion.tsx` (the one pause / play switch for every animation, off under
-  `prefers-reduced-motion`, and a ticker that stops off screen).
+  `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); the `Rules` and `Status`
+  sections; `Header`, `Footer`, and `Logo`; and `motion.tsx` (the one pause / play switch for every
+  animation, off under `prefers-reduced-motion`, and a ticker that stops off screen).
 - **src/lib/** — pure TypeScript with no React or DOM; modules with logic are unit-tested by a
   `*.test.ts` beside them: `price-index.ts` (the engine's index rule and its seeded simulation),
+  `index-view.ts` (what the index panel draws: venue rows, the number line, the sparkline),
   `replay.ts` and `replay-log.ts` (the demo's state machine, published log, and tampers),
   `tape.ts`, `shell.ts`, `format.ts`, and `prng.ts`; `content.ts` (the engine's rules and status
   as the page states them); and `site.ts` (links, contact, and `siteUrl()`, the one reader of the

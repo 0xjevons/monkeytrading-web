@@ -1,16 +1,16 @@
-import { keccak_256 } from "@noble/hashes/sha3.js";
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
-
-import { formatFixed } from "./format";
-import { bpsOf } from "./price-index";
-import { mulberry32, randInt } from "./prng";
-import { canonicalJson } from "./replay";
-
 /**
  * The simulated public tape: a deterministic stream of sequenced commands, each folded into a
  * running keccak-256 root (`root = keccak(previous root ‖ command)`), with a checkpoint every
  * `CHECKPOINT_EVERY` commands. The chaining is an illustration; the engine hashes its whole state.
  */
+
+import { keccak_256 } from "@noble/hashes/sha3.js";
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
+
+import { formatFixed } from "./format";
+import { bpsOf, median } from "./price-index";
+import { mulberry32, randInt } from "./prng";
+import { canonicalJson } from "./replay";
 
 interface TapeMarket {
   symbol: string;
@@ -19,8 +19,40 @@ interface TapeMarket {
   mid: number;
   /** Quantity decimals and the order-size range, in `10^-qtyDp` units. */
   qtyDp: number;
-  qty: [number, number];
+  qty: readonly [number, number];
 }
+
+export type TapeKind = "PRICES" | "ORDER" | "DEPOSIT";
+
+export interface TapeCommand {
+  kind: "command";
+  seq: number;
+  type: TapeKind;
+  /** The market a PRICES or ORDER command names; `null` for a deposit. */
+  market: string | null;
+  detail: string;
+  /** What the command did, as the tape prints it. */
+  result: string;
+  /**
+   * The published index for PRICES, or the fill price for ORDER, in the market's `10^-priceDp`
+   * units; `null` when there is no price, and for a deposit.
+   */
+  price: number | null;
+  /** True when the result is a refusal: no price for PRICES, a rejected ORDER. */
+  refused: boolean;
+  root: string;
+}
+
+export interface TapeCheckpoint {
+  kind: "checkpoint";
+  seq: number;
+  root: string;
+}
+
+export type TapeEntry = TapeCommand | TapeCheckpoint;
+
+/** A command before sequencing: its line on the tape and the payload the root folds in. */
+type Unsequenced = Omit<TapeCommand, "kind" | "seq" | "root"> & { payload: Record<string, unknown> };
 
 const MARKETS: readonly TapeMarket[] = [
   { symbol: "BTC-USD", priceDp: 2, mid: 10_000_000, qtyDp: 3, qty: [10, 500] },
@@ -35,99 +67,112 @@ const MAX_DIVERGENCE_BPS = 25;
 export const CHECKPOINT_EVERY = 12;
 const GENESIS_ROOT = `0x${"00".repeat(32)}`;
 
-export type TapeKind = "PRICES" | "ORDER" | "DEPOSIT";
-
-export interface TapeCommand {
-  kind: "command";
-  seq: number;
-  type: TapeKind;
-  detail: string;
-  /** What the command did. */
-  result: string;
-  /** True when the result is a refusal, such as an order with no price. */
-  refused: boolean;
-  root: string;
+/** `keccak(prev ‖ canonical JSON of command)`, as `0x`-prefixed hex. */
+function chain(prev: string, command: Record<string, unknown>): string {
+  const bytes = concatBytes(hexToBytes(prev.slice(2)), utf8ToBytes(canonicalJson(command)));
+  return `0x${bytesToHex(keccak_256(bytes))}`;
 }
 
-export interface TapeCheckpoint {
-  kind: "checkpoint";
-  seq: number;
-  root: string;
-}
-
-export type TapeEntry = TapeCommand | TapeCheckpoint;
-
-function chain(prev: string, command: unknown): string {
-  return `0x${bytesToHex(keccak_256(concatBytes(hexToBytes(prev.slice(2)), utf8ToBytes(canonicalJson(command)))))}`;
-}
-
-/** A tape whose `next()` returns the next sequenced command, followed by a checkpoint when one is due. */
+/**
+ * A tape whose `next()` returns the next sequenced command, followed by a checkpoint when one is
+ * due. Orders fill at the index their market last published, and are rejected while its last
+ * prices had no price; a market's first command is always its prices.
+ */
 export function createTape(seed: number, firstSeq = 1) {
   const rand = mulberry32(seed);
-  const mids = MARKETS.map((m) => m.mid);
-  const priced = MARKETS.map(() => true);
+  const walk = MARKETS.map((m) => m.mid);
+  // The index each market last published; `undefined` before its first prices, `null` for no price.
+  const published: (number | null | undefined)[] = MARKETS.map(() => undefined);
   let seq = firstSeq - 1;
   let root = GENESIS_ROOT;
 
   const account = () => `0x${randInt(rand, 0, 0xffff).toString(16).padStart(4, "0")}`;
 
-  function prices(i: number): Omit<TapeCommand, "seq" | "root" | "kind"> & { command: unknown } {
-    const m = MARKETS[i]!;
-    mids[i] = Math.max(1, Math.round(mids[i]! * (1 + (rand() - 0.5) * 8e-4)));
+  function market(i: number): TapeMarket {
+    const m = MARKETS[i];
+    // `i` is drawn from the table's own index range.
+    if (m === undefined) throw new Error(`tape: no market at index ${i}`);
+    return m;
+  }
+
+  function prices(i: number): Unsequenced {
+    const m = market(i);
+    const mid = Math.max(1, Math.trunc((walk[i] ?? m.mid) * (1 + (rand() - 0.5) * 8e-4)));
+    walk[i] = mid;
     const divergent = rand() < 0.06;
     const quotes = [0, 1, 2].map((v) => {
       const spreadBps = divergent && v === 2 ? randInt(rand, 30, 55) : (rand() - 0.5) * 4;
-      return Math.round(mids[i]! * (1 + spreadBps / 10_000));
+      return Math.trunc(mid * (1 + spreadBps / 10_000));
     });
-    const sorted = [...quotes].sort((a, b) => a - b);
-    const median = sorted[1]!;
-    const apart = bpsOf(sorted[2]! - sorted[0]!, median);
-    priced[i] = apart <= MAX_DIVERGENCE_BPS;
+    const index = median(quotes);
+    const apart = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);
+    const priced = apart <= MAX_DIVERGENCE_BPS;
+    published[i] = priced ? index : null;
     return {
       type: "PRICES",
+      market: m.symbol,
       detail: `${m.symbol} · 3 quotes`,
-      result: priced[i] ? `index ${formatFixed(median, m.priceDp)}` : `no price · ${apart} bps apart`,
-      refused: !priced[i],
-      command: { prices: { market: m.symbol, quotes } },
+      result: priced ? `index ${formatFixed(index, m.priceDp)}` : `no price · ${apart} bps apart`,
+      price: priced ? index : null,
+      refused: !priced,
+      payload: { prices: { market: m.symbol, quotes } },
     };
   }
 
-  function order(i: number): Omit<TapeCommand, "seq" | "root" | "kind"> & { command: unknown } {
-    const m = MARKETS[i]!;
+  function order(i: number, fill: number | null): Unsequenced {
+    const m = market(i);
     const side = rand() < 0.5 ? "buy" : "sell";
     const qty = randInt(rand, m.qty[0], m.qty[1]);
     const who = account();
     return {
       type: "ORDER",
+      market: m.symbol,
       detail: `${who} ${side} ${formatFixed(qty, m.qtyDp)} ${m.symbol}`,
-      result: priced[i] ? `filled @ ${formatFixed(mids[i]!, m.priceDp)}` : "rejected · no price",
-      refused: !priced[i],
-      command: { order: { account: who, market: m.symbol, side, qty } },
+      result: fill === null ? "rejected · no price" : `filled @ ${formatFixed(fill, m.priceDp)}`,
+      price: fill,
+      refused: fill === null,
+      payload: { order: { account: who, market: m.symbol, side, qty } },
     };
   }
 
-  function deposit(): Omit<TapeCommand, "seq" | "root" | "kind"> & { command: unknown } {
+  function deposit(): Unsequenced {
     const who = account();
     const amount = randInt(rand, 5, 400) * 25_000;
     return {
       type: "DEPOSIT",
+      market: null,
       detail: `${who} ${formatFixed(amount, 2)} USDC`,
       result: "credited",
+      price: null,
       refused: false,
-      command: { deposit: { account: who, amount } },
+      payload: { deposit: { account: who, amount } },
     };
+  }
+
+  function draw(): Unsequenced {
+    const roll = rand();
+    const i = randInt(rand, 0, MARKETS.length - 1);
+    if (roll >= 0.92) return deposit();
+    const last = published[i];
+    if (roll < 0.5 || last === undefined) return prices(i);
+    return order(i, last);
   }
 
   function next(): TapeEntry[] {
     seq += 1;
-    const roll = rand();
-    const i = randInt(rand, 0, MARKETS.length - 1);
-    const { command, ...line } = roll < 0.5 ? prices(i) : roll < 0.92 ? order(i) : deposit();
-    root = chain(root, { seq, ...(command as object) });
+    const { payload, ...line } = draw();
+    root = chain(root, { seq, ...payload });
     const entries: TapeEntry[] = [{ kind: "command", seq, root, ...line }];
     if (seq % CHECKPOINT_EVERY === 0) entries.push({ kind: "checkpoint", seq, root });
     return entries;
   }
 
   return { next };
+}
+
+/** The last `rows` entries of a fresh tape, filled from its first command. */
+export function tapeWindow(tape: ReturnType<typeof createTape>, rows: number): TapeEntry[] {
+  const entries: TapeEntry[] = [];
+  while (entries.length < rows) entries.push(...tape.next());
+  return entries.slice(-rows);
 }

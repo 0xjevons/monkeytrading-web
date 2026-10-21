@@ -1,3 +1,5 @@
+/** The seeded random generator that drives every simulation on the page. */
+
 /**
  * Mulberry32: a small seeded generator returning floats in [0, 1). It drives the simulations so
  * that every visitor, and the server render, sees the same sequence. Not for anything secret.
@@ -16,4 +18,16 @@ export function mulberry32(seed: number): () => number {
 /** An integer in `[min, max]` drawn from `rand`. */
 export function randInt(rand: () => number, min: number, max: number): number {
   return min + Math.floor(rand() * (max - min + 1));
+}
+
+/**
+ * One of `items`, drawn from `rand`.
+ * Error cases:
+ * - `items` is empty
+ */
+export function pick<T>(rand: () => number, items: readonly T[]): T {
+  const item = items[randInt(rand, 0, items.length - 1)];
+  // Only an empty list leaves nothing to pick; callers pass fixed, non-empty tables.
+  if (item === undefined) throw new Error("pick: no items to choose from");
+  return item;
 }

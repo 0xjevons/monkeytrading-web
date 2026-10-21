@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+/**
+ * The page's one motion switch: whether the simulations and their animations run, a ticker that
+ * stops off screen, and the pause / play control each animated panel shows.
+ */
+
+import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from "react";
 
 const REDUCE = "(prefers-reduced-motion: reduce)";
 
-// The visitor's explicit choice from a pause / play control; `null` follows the OS setting.
+// The visitor's explicit choice from a pause / play control; `null` follows the OS setting. The one
+// browser-only store for motion, written only from event handlers.
 let choice: boolean | null = null;
 const listeners = new Set<() => void>();
 
+/** Calls `onChange` when the visitor's choice or the OS's reduced-motion setting changes. */
 function subscribe(onChange: () => void) {
   const query = window.matchMedia(REDUCE);
   listeners.add(onChange);
@@ -18,14 +25,15 @@ function subscribe(onChange: () => void) {
   };
 }
 
+/** Whether motion is on: the visitor's choice, or else on unless the OS asks for reduced motion. */
 function motionEnabled() {
   return choice ?? !window.matchMedia(REDUCE).matches;
 }
 
 /**
- * Whether the page's simulations should run: off under `prefers-reduced-motion` until the visitor
- * presses play, and off during the server render, which shows the first frame. One switch drives
- * every animated panel.
+ * Whether the page's simulations and animations run: off under `prefers-reduced-motion` until the
+ * visitor presses play, and off during the server render, which shows the first frame. One switch
+ * drives every animated panel.
  */
 export function useMotion(): [boolean, (enabled: boolean) => void] {
   const enabled = useSyncExternalStore(subscribe, motionEnabled, () => false);
@@ -42,10 +50,7 @@ export function useMotion(): [boolean, (enabled: boolean) => void] {
  */
 export function useTicker<T extends Element>(intervalMs: number, enabled: boolean, onTick: () => void) {
   const ref = useRef<T>(null);
-  const tick = useRef(onTick);
-  useEffect(() => {
-    tick.current = onTick;
-  });
+  const tick = useEffectEvent(onTick);
 
   useEffect(() => {
     const el = ref.current;
@@ -54,7 +59,7 @@ export function useTicker<T extends Element>(intervalMs: number, enabled: boolea
     let timer: number | undefined;
     const sync = () => {
       const run = onScreen && document.visibilityState === "visible";
-      if (run && timer === undefined) timer = window.setInterval(() => tick.current(), intervalMs);
+      if (run && timer === undefined) timer = window.setInterval(() => tick(), intervalMs);
       if (!run && timer !== undefined) {
         window.clearInterval(timer);
         timer = undefined;
@@ -76,13 +81,13 @@ export function useTicker<T extends Element>(intervalMs: number, enabled: boolea
   return ref;
 }
 
-/** The pause / play switch shown on each animated panel. */
+/** The pause / play switch shown on each animated panel; it pauses every animation on the page. */
 export function MotionToggle({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!enabled)}
-      className="inline-flex items-center gap-1.5 rounded border border-line-2 px-2 py-1 text-[0.6875rem] uppercase tracking-[0.14em] text-fg-2 transition-colors hover:border-edge hover:text-fg"
+      className="inline-flex min-h-6 items-center gap-1.5 rounded border border-line-2 px-2 py-1 text-caption tracking-caps text-fg-2 uppercase transition-colors hover:border-edge hover:text-fg"
     >
       <svg aria-hidden="true" viewBox="0 0 10 10" className="size-2.5 fill-current">
         {enabled ? (

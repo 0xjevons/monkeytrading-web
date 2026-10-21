@@ -1,3 +1,5 @@
+/** The footer: the Jevons quotation, links elsewhere, and the risk notice. */
+
 import { EMAIL, GITHUB_URL, TELEGRAM_URL, X_URL } from "@/lib/site";
 
 import { LogoMark } from "./Logo";
@@ -8,6 +10,7 @@ const LINKS = [
   ["X", X_URL],
 ] as const;
 
+/** The page footer. */
 export function Footer() {
   return (
     <footer className="border-t border-line bg-ink-1">
@@ -47,7 +50,7 @@ export function Footer() {
           </ul>
         </nav>
         <div className="border-t border-line pt-8 lg:col-span-2">
-          <h2 className="text-[0.6875rem] tracking-[0.16em] text-fg-3 uppercase">Risk notice</h2>
+          <h2 className="text-caption tracking-label text-fg-3 uppercase">Risk notice</h2>
           <p className="mt-3 max-w-4xl text-xs leading-relaxed text-fg-2">
             CFDs are complex, leveraged products, and losses can be rapid. monkeytrading is pre-launch software: nothing
             on this site is an offer of, or an invitation to buy, any product, service, or token, and nothing here holds

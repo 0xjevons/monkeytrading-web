@@ -32,4 +32,4 @@ project's production domain; set `SITE_URL` to override it. The waitlist link is
 
 ## License
 
-Licensed under the Apache License, Version 2.0; see [`LICENSE`](LICENSE).
+Licensed under the Apache License, Version 2.0; see `LICENSE`.

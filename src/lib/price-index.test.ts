@@ -1,9 +1,12 @@
+/** Tests for the engine's index rule and the hero's seeded market. */
+
 import { describe, expect, it } from "vitest";
 
-import { computeIndex, createIndexSim, type PriceRules, type Quotes, type SimFrame } from "./price-index";
+import { computeIndex, createIndexSim, median, type PriceRules, type Quotes, type SimFrame } from "./price-index";
 
 const RULES: PriceRules = { maxAgeMs: 1000, maxDivergenceBps: 25, minSources: 2 };
 
+/** Three venue quotes as `[mid, ts]` pairs. */
 function quotes(binance: [number, number], coinbase: [number, number], kraken: [number, number]): Quotes {
   return {
     binance: { mid: binance[0], ts: binance[1] },
@@ -11,6 +14,19 @@ function quotes(binance: [number, number], coinbase: [number, number], kraken: [
     kraken: { mid: kraken[0], ts: kraken[1] },
   };
 }
+
+describe("median", () => {
+  it("takes the middle of an odd count and the truncated midpoint of an even one, in any order", () => {
+    expect(median([30, 10, 20])).toBe(20);
+    expect(median([10, 13])).toBe(11);
+    expect(median([-13, -10])).toBe(-11);
+    expect(median([7])).toBe(7);
+  });
+
+  it("throws on no values", () => {
+    expect(() => median([])).toThrow("median: no values");
+  });
+});
 
 describe("computeIndex", () => {
   it("takes the median of three fresh quotes", () => {
@@ -74,8 +90,7 @@ describe("createIndexSim", () => {
 
   it("keeps a bounded history with a gap wherever there was no price", () => {
     const frames = run(1871, 300);
-    const last = frames[frames.length - 1]!;
-    expect(last.history).toHaveLength(96);
+    expect(frames[frames.length - 1]?.history).toHaveLength(96);
     for (const frame of frames) {
       expect(frame.history[frame.history.length - 1]).toBe(frame.index.status === "price" ? frame.index.mid : null);
     }

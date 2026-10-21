@@ -1,3 +1,5 @@
+/** Locale-independent number formatting, so the server and the browser render the same text. */
+
 /** Formats an integer count of `10^-dp` units as a decimal with `dp` places: `(1234567, 2)` → `12,345.67`. */
 export function formatFixed(units: number, dp: number): string {
   const sign = units < 0 ? "-" : "";
@@ -7,7 +9,7 @@ export function formatFixed(units: number, dp: number): string {
   return dp === 0 ? `${sign}${whole}` : `${sign}${whole}.${String(abs % scale).padStart(dp, "0")}`;
 }
 
-/** Formats an integer amount in cents as `12,345.67`, independent of locale. */
+/** Formats an integer amount in cents as `12,345.67`. */
 export function formatCents(cents: number): string {
   return formatFixed(cents, 2);
 }
@@ -15,6 +17,11 @@ export function formatCents(cents: number): string {
 /** Formats an integer quantity in thousandths as `0.250`. */
 export function formatMilli(milli: number): string {
   return formatFixed(milli, 3);
+}
+
+/** Formats an integer with an explicit sign, as `+1.3` or `-1.3` for `(±13, 1)`; zero has none. */
+export function formatSigned(units: number, dp: number): string {
+  return units > 0 ? `+${formatFixed(units, dp)}` : formatFixed(units, dp);
 }
 
 /** Groups a non-negative integer's digits in threes: `1234567` → `1,234,567`. */

@@ -1,4 +1,6 @@
-@import "tailwindcss";
+/* Theme tokens, keyframes, base element styles, the shared panel classes, and the reduced-motion rule. */
+/* Class detection is limited to src/, so text elsewhere in the repository adds no rules. */
+@import "tailwindcss" source("..");
 
 @theme {
   --color-ink: #050607;
@@ -11,23 +13,28 @@
   --color-fg-2: #a9bab2;
   --color-fg-3: #7f9189;
   --color-glow: #5dffa6;
-  --color-glow-2: #2fd17f;
+  --color-glow-hover: #8affc0;
   --color-amber: #ffbe5c;
   --color-alarm: #ff6b62;
 
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
 
-  --animate-blink: blink 1.1s steps(1, end) infinite;
+  --text-label: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-data: 0.8125rem;
+  --text-lead: 0.9375rem;
+
+  --tracking-caps: 0.14em;
+  --tracking-label: 0.16em;
+
+  --shadow-glow: 0 0 1.75rem -0.375rem var(--color-glow);
+
   --animate-row-in: row-in 0.9s ease-out both;
   --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
-  --animate-tape-shift: tape-shift 0.45s ease-out;
+  --animate-tape-shift-1: tape-shift-1 0.45s ease-out;
+  --animate-tape-shift-2: tape-shift-2 0.45s ease-out;
 
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
   @keyframes row-in {
     from {
       background-color: color-mix(in oklab, var(--color-glow) 14%, transparent);
@@ -42,9 +49,15 @@
       background-color: transparent;
     }
   }
-  @keyframes tape-shift {
+  /* The tape's rows move up by the one or two rows a tick adds; `--row` is the row height. */
+  @keyframes tape-shift-1 {
     from {
-      transform: translateY(var(--shift, 0));
+      transform: translateY(var(--row));
+    }
+  }
+  @keyframes tape-shift-2 {
+    from {
+      transform: translateY(calc(2 * var(--row)));
     }
   }
   @keyframes pulse-dot {
@@ -115,7 +128,11 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.18) 2px 3px);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    color-mix(in oklab, var(--color-ink) 18%, transparent) 2px 3px
+  );
   border-radius: inherit;
   z-index: 1;
 }
@@ -126,11 +143,12 @@ body {
   border: 1px solid var(--color-line-2);
   border-radius: 0.75rem;
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.6),
-    0 1.5rem 4rem -1.5rem rgb(0 0 0 / 0.9),
+    0 0 0 1px color-mix(in oklab, var(--color-ink) 60%, transparent),
+    0 1.5rem 4rem -1.5rem color-mix(in oklab, var(--color-ink) 90%, transparent),
     0 0 6rem -2rem color-mix(in oklab, var(--color-glow) 14%, transparent);
 }
 
+/* Fades the oldest rows of a scrolling log into the panel. */
 .fade-top {
   mask-image: linear-gradient(to bottom, transparent, black 3.5rem);
 }

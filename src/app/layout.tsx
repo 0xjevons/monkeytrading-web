@@ -1,3 +1,5 @@
+/** The root layout: fonts, metadata, and the viewport. */
+
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Instrument_Serif } from "next/font/google";
 import type { ReactNode } from "react";
@@ -43,10 +45,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // `--color-ink`, the page background.
   themeColor: "#050607",
   colorScheme: "dark",
 };
 
+/** The document shell around every page. */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${mono.variable} ${serif.variable}`}>

@@ -1,3 +1,5 @@
+/** The site's mark. */
+
 /** The mark: three venue quotes at different heights, and the median line through the middle one. */
 export function LogoMark({ className = "" }: { className?: string }) {
   return (

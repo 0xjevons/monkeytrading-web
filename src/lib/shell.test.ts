@@ -1,8 +1,11 @@
+/** Tests for the shell's command interpreter. */
+
 import { describe, expect, it } from "vitest";
 
-import { COMMANDS, runShell, type Line } from "./shell";
+import { COMMANDS, MAX_INPUT, runShell, type Line } from "./shell";
 import { TELEGRAM_URL } from "./site";
 
+/** The lines' text, with links as their labels. */
 const text = (lines: Line[]) =>
   lines.map((l) => l.parts.map((p) => (typeof p === "string" ? p : p.label)).join("")).join("\n");
 
@@ -30,5 +33,11 @@ describe("runShell", () => {
   it("names an unknown command as typed", () => {
     const out = runShell("Moon --soon").lines;
     expect(out[0]).toEqual({ tone: "alarm", parts: ["command not found: Moon"] });
+  });
+
+  it("reads at most the first MAX_INPUT characters of a line", () => {
+    const out = runShell("x".repeat(MAX_INPUT + 50)).lines;
+    expect(out[0]).toEqual({ tone: "alarm", parts: [`command not found: ${"x".repeat(MAX_INPUT)}`] });
+    expect(runShell(`${" ".repeat(MAX_INPUT)}help`)).toEqual({ lines: [] });
   });
 });

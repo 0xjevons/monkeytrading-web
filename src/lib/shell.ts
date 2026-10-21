@@ -1,3 +1,5 @@
+/** The shell's command interpreter: a typed reading of one input line, with nothing executed. */
+
 import { RULES, STATUS } from "./content";
 import { SIM_RULES } from "./price-index";
 import { EMAIL, GITHUB_URL, TELEGRAM_URL, X_URL } from "./site";
@@ -14,11 +16,17 @@ export interface ShellResult {
   lines: Line[];
   /** Clear the screen before printing. */
   clear?: boolean;
-  /** The id of a page section to move to. */
-  goto?: string;
+  /** The page section to move to. */
+  goto?: "tape" | "replay";
 }
 
+/** The longest line the shell reads; the rest of a longer one is ignored. */
+export const MAX_INPUT = 120;
+
+/** One output line in `tone`. */
 const line = (tone: Tone, ...parts: Segment[]): Line => ({ tone, parts });
+
+/** A link to one of the site's own constants, labelled without its scheme by default. */
 const link = (href: string, label = href.replace(/^(https?:\/\/|mailto:)/, "")): Segment => ({ href, label });
 
 export const COMMANDS: readonly [string, string][] = [
@@ -36,7 +44,7 @@ export const COMMANDS: readonly [string, string][] = [
 
 /** Interprets one line typed at the prompt. Pure: the caller prints, clears, and scrolls. */
 export function runShell(input: string): ShellResult {
-  const trimmed = input.trim();
+  const trimmed = input.slice(0, MAX_INPUT).trim();
   const [name = ""] = trimmed.toLowerCase().split(/\s+/);
   switch (name) {
     case "":

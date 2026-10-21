@@ -10,4 +10,12 @@ export default defineConfig([
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,
   jsxA11y.flatConfigs.strict,
+  {
+    rules: {
+      // Every source file, tests included, stays under 300 lines; split rather than exempt.
+      "max-lines": ["error", 300],
+      // Narrow instead; an absence our own code cannot produce throws an Error.
+      "@typescript-eslint/no-non-null-assertion": "error",
+    },
+  },
 ]);

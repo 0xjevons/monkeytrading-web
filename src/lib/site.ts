@@ -1,3 +1,5 @@
+/** Links, contact, and identity for the site, and the canonical origin from the build environment. */
+
 /**
  * The waitlist: a Telegram channel. Every "join" link on the site points here; replace it with the
  * channel's t.me URL once the channel exists.

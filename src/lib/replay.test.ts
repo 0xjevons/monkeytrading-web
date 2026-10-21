@@ -1,9 +1,28 @@
+/** Tests for the replay demo: the published log, tampering, the state machine, and state roots. */
+
 import { describe, expect, it } from "vitest";
 
-import { applyCommand, canonicalJson, emptyState, replay, stateRoot, type LogEntry } from "./replay";
+import {
+  applyCommand,
+  canonicalJson,
+  emptyState,
+  replay,
+  stateRoot,
+  type Applied,
+  type Command,
+  type DemoState,
+  type LogEntry,
+} from "./replay";
 import { DEMO_LOG, TAMPERS, tamperLog } from "./replay-log";
 
 const ROOT = /^0x[0-9a-f]{64}$/;
+
+/** Applies `command` at `seq` and returns the accepted result, failing the test on a refusal. */
+function accept(state: DemoState, seq: number, command: Command): Extract<Applied, { ok: true }> {
+  const applied = applyCommand(state, seq, command);
+  if (!applied.ok) throw new Error(`seq ${seq} refused: ${applied.error}`);
+  return applied;
+}
 
 describe("replay", () => {
   it("reproduces every published root of the demo log", () => {
@@ -17,14 +36,15 @@ describe("replay", () => {
     const result = replay(tamperLog(DEMO_LOG, tamper));
     expect(result.ok).toBe(false);
     if (result.ok) return;
+    expect(result.kind).toBe("mismatch");
     expect(result.divergedAt).toBe(tamper.seq);
     // It stops at the first mismatch, after every earlier root matched.
     expect(result.steps).toHaveLength(tamper.seq);
     expect(result.steps.slice(0, -1).every((s) => s.matches)).toBe(true);
-    const last = result.steps[result.steps.length - 1]!;
-    expect(last.matches).toBe(false);
+    const last = result.steps[result.steps.length - 1];
+    expect(last?.matches).toBe(false);
     expect(result.message).toBe(
-      `state root mismatch at seq ${tamper.seq}: log says ${last.published}, replay gives ${last.root}`,
+      `state root mismatch at seq ${tamper.seq}: log says ${last?.published}, replay gives ${last?.root}`,
     );
   });
 
@@ -40,33 +60,39 @@ describe("replay", () => {
     const result = replay(log);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.divergedAt).toBe(5);
-    expect(result.message).toBe("applying seq 5: seq 5 out of sequence: expected 4");
+    expect(result).toEqual({
+      ok: false,
+      kind: "refused",
+      steps: result.steps,
+      divergedAt: 5,
+      message: "applying seq 5: seq 5 out of sequence: expected 4",
+    });
+    expect(result.steps.map((s) => s.seq)).toEqual([1, 2, 3]);
   });
 
   it("leaves the published log untouched when tampering", () => {
     const before = JSON.stringify(DEMO_LOG);
-    tamperLog(DEMO_LOG, TAMPERS[0]!);
+    for (const tamper of TAMPERS) tamperLog(DEMO_LOG, tamper);
     expect(JSON.stringify(DEMO_LOG)).toBe(before);
   });
 });
 
 describe("applyCommand", () => {
-  const listed = applyCommand(emptyState(), 1, {
+  const listed = accept(emptyState(), 1, {
     type: "list_market",
     market: "BTC-USD",
     max_divergence_bps: 25,
     min_sources: 2,
   }).state;
-  const funded = applyCommand(listed, 2, { type: "deposit", account: "0xa", amount: 1_000_000 }).state;
-  const priced = applyCommand(funded, 3, {
+  const funded = accept(listed, 2, { type: "deposit", account: "0xa", amount: 1_000_000 }).state;
+  const priced = accept(funded, 3, {
     type: "prices",
     market: "BTC-USD",
     quotes: { binance: 10_000_000, coinbase: 10_000_500, kraken: 9_999_000 },
   }).state;
 
   it("fills a market order at the median, with no spread", () => {
-    const { state, event } = applyCommand(priced, 4, {
+    const { state, event } = accept(priced, 4, {
       type: "order",
       account: "0xa",
       market: "BTC-USD",
@@ -79,13 +105,13 @@ describe("applyCommand", () => {
   });
 
   it("realises profit and loss when a position closes", () => {
-    const bought = applyCommand(priced, 4, { type: "order", account: "0xa", market: "BTC-USD", side: "buy", qty: 100 });
-    const higher = applyCommand(bought.state, 5, {
+    const bought = accept(priced, 4, { type: "order", account: "0xa", market: "BTC-USD", side: "buy", qty: 100 });
+    const higher = accept(bought.state, 5, {
       type: "prices",
       market: "BTC-USD",
       quotes: { binance: 10_010_000, coinbase: 10_010_000, kraken: 10_010_000 },
     });
-    const sold = applyCommand(higher.state, 6, {
+    const sold = accept(higher.state, 6, {
       type: "order",
       account: "0xa",
       market: "BTC-USD",
@@ -99,7 +125,7 @@ describe("applyCommand", () => {
   });
 
   it("has a price at the spread limit, and none past it, where orders are rejected", () => {
-    const apart = applyCommand(funded, 3, {
+    const apart = accept(funded, 3, {
       type: "prices",
       market: "BTC-USD",
       quotes: { binance: 10_000_000, coinbase: 10_026_000, kraken: 10_000_100 },
@@ -107,14 +133,14 @@ describe("applyCommand", () => {
     // 260.00 apart is 25.99 bps of the median, which truncates to 25: at the limit, so still a price.
     expect(apart.event).toBe("index 100,001.00");
     expect(apart.state.markets["BTC-USD"]?.index).toBe(10_000_100);
-    const wider = applyCommand(funded, 3, {
+    const wider = accept(funded, 3, {
       type: "prices",
       market: "BTC-USD",
       quotes: { binance: 10_000_000, coinbase: 10_030_000, kraken: 10_000_100 },
     });
     expect(wider.event).toBe("no price: quotes 29 bps apart");
     expect(wider.state.markets["BTC-USD"]?.index).toBeNull();
-    const order = applyCommand(wider.state, 4, {
+    const order = accept(wider.state, 4, {
       type: "order",
       account: "0xa",
       market: "BTC-USD",
@@ -127,13 +153,31 @@ describe("applyCommand", () => {
 
   it("does not modify the state it is given", () => {
     const before = canonicalJson(priced);
-    applyCommand(priced, 4, { type: "deposit", account: "0xa", amount: 5 });
+    accept(priced, 4, { type: "deposit", account: "0xa", amount: 5 });
     expect(canonicalJson(priced)).toBe(before);
   });
 
-  it("refuses non-integer and non-positive amounts", () => {
-    expect(() => applyCommand(listed, 2, { type: "deposit", account: "0xa", amount: 0 })).toThrow("amount");
-    expect(() => applyCommand(listed, 2, { type: "deposit", account: "0xa", amount: 1.5 })).toThrow("amount");
+  it("refuses invalid commands with the reason, and changes nothing", () => {
+    const cases: [DemoState, number, Command, string][] = [
+      [listed, 2, { type: "deposit", account: "0xa", amount: 0 }, "amount must be a positive integer"],
+      [listed, 2, { type: "deposit", account: "0xa", amount: 1.5 }, "amount must be a positive integer"],
+      [listed, 3, { type: "deposit", account: "0xa", amount: 5 }, "seq 3 out of sequence: expected 2"],
+      [listed, 2, { type: "list_market", market: "BTC-USD", max_divergence_bps: 25, min_sources: 2 }, "BTC-USD is already listed"],
+      [listed, 2, { type: "order", account: "0xa", market: "ETH-USD", side: "buy", qty: 1 }, "ETH-USD is not listed"],
+      [listed, 2, { type: "order", account: "0xb", market: "BTC-USD", side: "buy", qty: 1 }, "0xb has no balance"],
+      [funded, 3, { type: "order", account: "0xa", market: "BTC-USD", side: "sell", qty: -5 }, "qty must be a positive integer"],
+      [
+        funded,
+        3,
+        { type: "prices", market: "BTC-USD", quotes: { binance: 1, coinbase: 0, kraken: 1 } },
+        "coinbase quote must be a positive integer",
+      ],
+    ];
+    for (const [state, seq, command, error] of cases) {
+      const before = canonicalJson(state);
+      expect(applyCommand(state, seq, command)).toEqual({ ok: false, error });
+      expect(canonicalJson(state)).toBe(before);
+    }
   });
 });
 
