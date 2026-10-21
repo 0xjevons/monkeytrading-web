@@ -59,12 +59,14 @@ Before a push that opens or updates a PR, check only what the change affects. Gi
 CI on the PR.
 
 - Take the validation commands of the `.github/workflows/` jobs the change can affect and run
-  them, each exiting zero. In `.github/workflows/ci.yaml` those are `npm ci`, then
-  `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and
-  `npm audit --audit-level=high`. Every job covers the whole project, so any change outside
-  Markdown and `agents/` runs all six, `npm ci` first so the checks use the lockfile as CI
-  installs it. A change confined to Markdown or `agents/` affects none of them; say so instead of
-  running them.
+  them, each exiting zero. In `.github/workflows/ci.yaml` those are the `docs` job's
+  `python3 scripts/check-docs.test.py` and `python3 scripts/check-docs.py`, run for every change,
+  since moving or renaming a file can break a link as surely as editing a page; and, for a change
+  under `.github/workflows/`, the `workflows` job's actionlint, at the version `ci.yaml` pins.
+- Once `ci.yaml` runs the site's checks — `npm ci`, then `npm run lint`, `npm run typecheck`,
+  `npm test`, `npm run build`, and `npm audit --audit-level=high` — each covers the whole project,
+  so any change outside Markdown and `agents/` runs all six, `npm ci` first so the checks use the
+  lockfile as CI installs it.
 - A push to a draft PR may carry failing or skipped checks when the PR says which; every CI
   check passes before the PR is marked ready.
 - Leave long-running checks — Lighthouse, browser runs, bundle analysis — to the steps that ask

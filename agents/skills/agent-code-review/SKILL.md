@@ -189,24 +189,29 @@ accepted Critical, High, and Medium finding is fixed by class before the next ro
   reads it before anything else on the branch, numbers the next round from it, and counts the
   Medium cap from it.
 - **A clean round ends the loop.** A round that accepts no Critical, High, or Medium finding ends
-  it. After it, change no code, fix no Lows or Nits, and run no further rounds. Mark the PR ready
-  on exactly the commit that round reviewed, once `ci-passed` is green on it; the remaining Lows
-  and Nits go in the report to the owner, not into new commits.
-- **A later code change reopens the loop.** Any code change after the clean round — a fix for a
-  failed check or dev scenario, a fix for a review comment on a ready PR, a change the user asks
-  for, or a rebase that changes behaviour — moves the PR back to draft and reopens the loop. A
-  mechanical rebase onto `main` does not; the rebased commit stands in for the reviewed one.
+  it. After it, change nothing in the PR's diff, fix no Lows or Nits, and run no further rounds.
+  Mark the PR ready on exactly the commit that round reviewed, once every other prerequisite in
+  [Before a PR is ready for review](../agent-create-pr/SKILL.md#before-a-pr-is-ready-for-review)
+  holds, `ci-passed` green on that commit included; the remaining Lows and Nits go in the report
+  to the owner, not into new commits.
+- **A later change reopens the loop.** Any change to the PR's diff — code, config, docs, or rules
+  alike — after the loop ends, on a clean round or on the owner's downgrade, moves the PR back to
+  draft and reopens the loop: a fix for a failed check or dev scenario, a fix for a review comment
+  on a ready PR, a change the user asks for, or a rebase that changes behaviour. A mechanical
+  rebase onto `main` does not; the rebased commit stands in for the reviewed one.
 - **Critical and High have no round cap.** Keep fixing and re-reviewing until a round accepts none.
 - **Mediums get at most five rounds.** If any round numbered 5 or later — including one in a
   reopened loop — ends with no Critical or High but with Mediums remaining, stop. Report the
   remaining Mediums to the owner, each with its title, `file:line`, and scenario, and ask for
   consent to downgrade them to Low. With that consent, record each downgraded finding in the fix
-  notes, after the round log, with its title, `file:line`, and the round it was downgraded in;
-  mark the PR ready on that round's commit, once `ci-passed` is green on it, with no further code
-  changes; and list the downgraded findings in the report to the owner. Without it, wait for the
-  owner's direction.
-- **A downgrade stays.** A later round that finds a recorded downgraded finding again grades it
-  Low and does not raise it as Medium again.
+  notes, after the round log, with its title, `file:line`, scenario, and the round it was
+  downgraded in; mark the PR ready on that round's commit under the same conditions as after a
+  clean round, with no further changes to its diff; and list the downgraded findings in the report
+  to the owner. Without it, wait for the owner's direction.
+- **A downgrade stays while the finding does.** A later round that finds a recorded downgraded
+  finding again, with the same scenario and no greater impact, grades it Low and does not raise it
+  as Medium again. When a later change widens its scenario or raises its impact, the round grades
+  it afresh by the severity guide.
 
 ## Non-negotiable rules
 
