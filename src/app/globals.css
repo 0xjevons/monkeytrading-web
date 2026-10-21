@@ -1,0 +1,166 @@
+/* Theme tokens, keyframes, base element styles, the shared panel classes, and the reduced-motion rule. */
+/* Class detection is limited to src/, so text elsewhere in the repository adds no rules. */
+@import "tailwindcss" source("..");
+
+@theme {
+  --color-ink: #050607;
+  --color-ink-1: #0a0e0f;
+  --color-ink-2: #0f1517;
+  --color-line: #172024;
+  --color-line-2: #24323a;
+  --color-edge: #5b6f69;
+  --color-fg: #e8f0ec;
+  --color-fg-2: #a9bab2;
+  --color-fg-3: #7f9189;
+  --color-glow: #5dffa6;
+  --color-glow-hover: #8affc0;
+  --color-amber: #ffbe5c;
+  --color-alarm: #ff6b62;
+
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+
+  --text-label: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-data: 0.8125rem;
+  --text-lead: 0.9375rem;
+
+  --tracking-caps: 0.14em;
+  --tracking-label: 0.16em;
+
+  --shadow-glow: 0 0 1.75rem -0.375rem var(--color-glow);
+
+  --animate-row-in: row-in 0.9s ease-out both;
+  --animate-row-flash: row-flash 0.9s ease-out both;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+  --animate-tape-shift-1: tape-shift-1 0.45s ease-out;
+  --animate-tape-shift-2: tape-shift-2 0.45s ease-out;
+
+  @keyframes row-in {
+    from {
+      transform: translateY(0.35rem);
+      opacity: 0;
+    }
+    30% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes row-flash {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  /* The tape's rows move up by the one or two rows a tick adds; `--row` is the row height. */
+  @keyframes tape-shift-1 {
+    from {
+      transform: translateY(var(--row));
+    }
+  }
+  @keyframes tape-shift-2 {
+    from {
+      transform: translateY(calc(2 * var(--row)));
+    }
+  }
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-glow) 55%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 0 0.35rem transparent;
+    }
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-ink);
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-mono);
+  font-feature-settings: "zero" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-glow) 35%, transparent);
+  color: var(--color-fg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-glow);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Text that glows like a phosphor display. */
+.glow {
+  color: var(--color-glow);
+  text-shadow:
+    0 0 0.6rem color-mix(in oklab, var(--color-glow) 45%, transparent),
+    0 0 2.4rem color-mix(in oklab, var(--color-glow) 20%, transparent);
+}
+
+/* The faint grid behind the page, fading out from the top. */
+.backdrop-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+/* CRT scanlines across a panel's background, beneath its text so they never lower its contrast. */
+.scanlines {
+  position: relative;
+  isolation: isolate;
+}
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    color-mix(in oklab, var(--color-ink) 18%, transparent) 2px 3px
+  );
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* A terminal window: hairline frame, dark glass, soft green bloom. */
+.panel {
+  background: linear-gradient(180deg, var(--color-ink-2), var(--color-ink-1));
+  border: 1px solid var(--color-line-2);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-ink) 60%, transparent),
+    0 1.5rem 4rem -1.5rem color-mix(in oklab, var(--color-ink) 90%, transparent),
+    0 0 6rem -2rem color-mix(in oklab, var(--color-glow) 14%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -17,20 +17,23 @@ current action.
   `apple-icon.png`, and the static `opengraph-image.png` and `twitter-image.png` (1200 × 630) with
   their `.alt.txt`.
 - **src/components/** — React components: the simulated panels `IndexPanel` (the median index),
-  `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); `Header`, `Footer`, and
-  `Logo`; and `motion.tsx` (the one pause / play switch for every animation, off under
-  `prefers-reduced-motion`, and a ticker that stops off screen).
+  `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); the `Rules` and `Status`
+  sections; `Header`, `Footer`, and `Logo`; and `motion.tsx` (the one pause / play switch for every
+  animation, off under `prefers-reduced-motion`, and a ticker that stops off screen).
 - **src/lib/** — pure TypeScript with no React or DOM; modules with logic are unit-tested by a
   `*.test.ts` beside them: `price-index.ts` (the engine's index rule and its seeded simulation),
+  `index-view.ts` (what the index panel draws: venue rows, the number line, the sparkline),
   `replay.ts` and `replay-log.ts` (the demo's state machine, published log, and tampers),
-  `tape.ts`, `shell.ts`, `format.ts`, and `prng.ts`; `content.ts` (the engine's rules and status
+  `tape.ts`, `shell.ts`, `format.ts`, `prng.ts` (the seeded generator and the shared seed), and
+  `unreachable.ts` (the exhaustiveness check); `content.ts` (the engine's rules and status
   as the page states them); and `site.ts` (links, contact, and `siteUrl()`, the one reader of the
   site's environment variables).
 - **next.config.ts** — the security headers on every path (a CSP without nonces, nosniff, referrer,
   frame, opener, and permissions policies), `reactStrictMode`, `poweredByHeader: false`, and
   `agentRules: false`, so `next dev` leaves this index alone.
-- **eslint.config.mjs** — ESLint flat config: `@eslint/js`, `typescript-eslint`, `react-hooks`,
-  `jsx-a11y` strict, and the 300-line `max-lines` cap; `npm run lint` allows no warnings.
+- **eslint.config.mjs** — ESLint flat config: `@eslint/js`, `typescript-eslint`, `react-hooks`, and
+  `jsx-a11y` strict, which lets a scrolling `log` take focus; the 300-line `max-lines` cap; and no
+  non-null assertions. `npm run lint` allows no warnings.
 - **tsconfig.json** — `strict` and `noUncheckedIndexedAccess`; `@/*` maps to `src/*`.
 - **vitest.config.ts** — runs `src/**/*.test.ts` in the Node environment.
 - **postcss.config.mjs** — Tailwind CSS 4 through `@tailwindcss/postcss`.
@@ -39,10 +42,11 @@ current action.
   root `AGENTS.md` and `CLAUDE.md` are symlinks to `agents/AGENTS.md`; its test is
   `check-docs.test.py`.
 - **.github/workflows/** — `ci.yaml`, on every push to `main` and every PR: the `workflows` job
-  lints the workflows with actionlint, which also runs shellcheck over each `run:` script, and the
-  `docs` job runs `scripts/check-docs.test.py`, then `scripts/check-docs.py`. Actions are pinned by
-  commit SHA. `ci-passed` is the one CI check branch rules require: it passes only when every other
-  job succeeded, so each new job must be added to its `needs`.
+  lints the workflows with actionlint, which also runs shellcheck over each `run:` script; the
+  `docs` job runs `scripts/check-docs.test.py`, then `scripts/check-docs.py`; and the `lint`,
+  `typecheck`, `test`, `build`, and `audit` jobs run the site's checks after `npm ci`. Actions are
+  pinned by commit SHA. `ci-passed` is the one CI check branch rules require: it passes only when
+  every other job succeeded, so each new job must be added to its `needs`.
 - **.nvmrc** — the Node.js version (24) for local runs and CI.
 - **.npmrc** — `save-exact=true`, so every dependency is pinned exactly.
 - **package.json** / **package-lock.json** — scripts and exact-pinned dependencies; the lockfile is

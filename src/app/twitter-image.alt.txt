@@ -1,0 +1,1 @@
+monkeytrading, pre-launch: the house is open source, the ledger is public. A simulated log of sequenced prices and orders.
