@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { bpsOf, median } from "./price-index";
 import {
   chainRoot,
   CHECKPOINT_EVERY,
@@ -23,6 +24,20 @@ const take = (seed: number, n: number, firstSeq = 1): TapeEntry[] => {
 
 const commands = (entries: TapeEntry[]): TapeCommand[] =>
   entries.filter((e): e is TapeCommand => e.kind === "command");
+
+/**
+ * The quotes a PRICES command published.
+ * Error cases:
+ * - the command carries no list of numeric quotes
+ */
+function quotesOf(command: TapeCommand): number[] {
+  const prices = command.command.prices;
+  const quotes = typeof prices === "object" && prices !== null && "quotes" in prices ? prices.quotes : undefined;
+  if (!Array.isArray(quotes) || !quotes.every((q): q is number => typeof q === "number")) {
+    throw new Error(`seq ${command.seq} has no quotes`);
+  }
+  return quotes;
+}
 
 describe("createTape", () => {
   it("is deterministic for a seed", () => {
@@ -76,18 +91,22 @@ describe("createTape", () => {
     expect(rejections).toBeGreaterThan(0);
   });
 
-  it("publishes no price exactly when the quotes spread past their market's limit", () => {
+  it("publishes the median of its quotes as the index, and no price exactly when they spread past the market's limit", () => {
     const limits = new Map(TAPE_MARKETS.map((m) => [m.symbol, m.maxDivergenceBps]));
     const prices = commands(take(1871, 3_000)).filter((c) => c.type === "PRICES");
+    let refused = 0;
     for (const command of prices) {
-      const limit = limits.get(command.market ?? "");
-      const apart = /no price · (\d+) bps apart/.exec(command.result);
-      expect(limit).toBeDefined();
-      expect(command.refused).toBe(apart !== null);
-      if (apart) expect(Number(apart[1])).toBeGreaterThan(limit ?? 0);
-      else expect(command.price).not.toBeNull();
+      const quotes = quotesOf(command);
+      const index = median(quotes);
+      const spread = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);
+      const over = spread > (limits.get(command.market ?? "") ?? Number.NaN);
+      expect(command.refused).toBe(over);
+      expect(command.price).toBe(over ? null : index);
+      if (over) refused += 1;
     }
-    expect(prices.some((c) => c.refused)).toBe(true);
+    // Both outcomes occur, so each assertion ran on each.
+    expect(refused).toBeGreaterThan(0);
+    expect(refused).toBeLessThan(prices.length);
   });
 });
 
@@ -108,12 +127,13 @@ describe("chainRoot", () => {
 });
 
 describe("tapeWindow", () => {
-  it("returns the last rows, and the tape carries on from the last of them", () => {
-    const tape = createTape(5, 1_000);
-    const window = tapeWindow(tape, 13);
-    expect(window).toHaveLength(13);
-    const lastSeq = window[window.length - 1]?.seq ?? 0;
-    const after = tape.next();
-    expect(after[0]?.seq).toBe(lastSeq + 1);
+  it("drops the oldest entries past `rows`, and the tape carries on from the last kept", () => {
+    // Twelve commands from seq 1 add a checkpoint at seq 12: thirteen entries for twelve rows.
+    const tape = createTape(5, 1);
+    const window = tapeWindow(tape, 12);
+    expect(window).toHaveLength(12);
+    expect(window[0]).toMatchObject({ kind: "command", seq: 2 });
+    expect(window[11]).toMatchObject({ kind: "checkpoint", seq: 12 });
+    expect(tape.next()[0]?.seq).toBe(13);
   });
 });

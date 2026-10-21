@@ -1,7 +1,8 @@
 /** The project's pre-launch status: what runs locally today and what is in build. */
 
-import { STATUS } from "@/lib/content";
+import { STATUS, STATUS_LABELS, type StatusItem } from "@/lib/content";
 import { GITHUB_URL, TELEGRAM_URL } from "@/lib/site";
+import { unreachable } from "@/lib/unreachable";
 
 /** The status section: the board from `content.ts`, with links to the code and the waitlist. */
 export function Status() {
@@ -45,27 +46,39 @@ export function Status() {
           </div>
         </div>
         <ul className="panel divide-y divide-line">
-          {STATUS.map((item) => (
-            <li key={item.name} className="grid gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-[9rem_1fr]">
-              <span
-                className={`flex items-center gap-2 text-caption tracking-caps uppercase ${
-                  item.state === "running" ? "text-glow" : "text-amber"
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`size-1.5 rounded-full ${item.state === "running" ? "bg-glow" : "border border-amber"}`}
-                />
-                {item.state === "running" ? "Runs locally" : "In build"}
-              </span>
-              <span>
-                <span className="text-sm text-fg">{item.name}</span>
-                <span className="mt-1 block text-data leading-relaxed text-fg-2">{item.detail}</span>
-              </span>
-            </li>
-          ))}
+          {STATUS.map((item) => {
+            const tone = toneOf(item.state);
+            return (
+              <li key={item.name} className="grid gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-[9rem_1fr]">
+                <span className={`flex items-center gap-2 text-caption tracking-caps uppercase ${tone.text}`}>
+                  <span aria-hidden="true" className={`size-1.5 rounded-full ${tone.dot}`} />
+                  {STATUS_LABELS[item.state]}
+                </span>
+                <span>
+                  <span className="text-sm text-fg">{item.name}</span>
+                  <span className="mt-1 block text-data leading-relaxed text-fg-2">{item.detail}</span>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>
   );
+}
+
+/**
+ * The colours of a status: green for what runs locally, amber for what is in build.
+ * Error cases:
+ * - a state outside `StatusItem["state"]`
+ */
+function toneOf(state: StatusItem["state"]): { text: string; dot: string } {
+  switch (state) {
+    case "running":
+      return { text: "text-glow", dot: "bg-glow" };
+    case "building":
+      return { text: "text-amber", dot: "border border-amber" };
+    default:
+      return unreachable(state, "Status");
+  }
 }

@@ -1,6 +1,6 @@
 /** The house rules: the engine's terms as short statements, with the unbuilt ones marked. */
 
-import { RULES } from "@/lib/content";
+import { RULES, STATUS_LABELS } from "@/lib/content";
 
 /** The rules section: one card per rule from `content.ts`. */
 export function Rules() {
@@ -22,7 +22,7 @@ export function Rules() {
             <li key={rule.title} className="bg-ink-1 p-6 transition-colors hover:bg-ink-2">
               <div className="flex items-center justify-between text-caption tracking-caps uppercase">
                 <span className="text-fg-3">{String(i + 1).padStart(2, "0")}</span>
-                {rule.building && <span className="text-amber">In build</span>}
+                {rule.building && <span className="text-amber">{STATUS_LABELS.building}</span>}
               </div>
               <h3 className="mt-4 text-lead leading-snug font-medium text-fg">{rule.title}</h3>
               <p className="mt-2 text-data leading-relaxed text-fg-2">{rule.detail}</p>

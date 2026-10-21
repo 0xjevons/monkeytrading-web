@@ -47,7 +47,8 @@ export const RULES: readonly Rule[] = [
   },
   {
     title: "The house caps its own risk.",
-    detail: "Its net exposure is capped in each market, and across all of them, as fractions of its net asset value.",
+    detail:
+      "Its net exposure is capped in each market, and across all of them, at the larger of a fraction of its net asset value and a fixed dollar floor.",
   },
   {
     title: "Collateral stays on-chain.",
