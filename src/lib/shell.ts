@@ -1,6 +1,7 @@
 /** The shell's command interpreter: a typed reading of one input line, with nothing executed. */
 
 import { RULES, STATUS, STATUS_LABELS } from "./content";
+import { groupThousands } from "./format";
 import { SIM_RULES } from "./price-index";
 import { EMAIL, GITHUB_URL, TELEGRAM_URL, X_URL } from "./site";
 
@@ -65,8 +66,8 @@ export function runShell(input: string): ShellResult {
           line("fg", "The index is the median of recent quotes from several independent venues."),
           line(
             "muted",
-            `In the engine's local configuration for BTC-USD, quotes older than ${SIM_RULES.maxAgeMs} ms are dropped, at least ` +
-              `${SIM_RULES.minSources} must be fresh, and they may spread at most ${SIM_RULES.maxDivergenceBps} bps.`,
+            `In the engine's local configuration for BTC-USD, quotes older than ${groupThousands(SIM_RULES.maxAgeMs)} ms are ` +
+              `dropped, at least ${SIM_RULES.minSources} must be fresh, and they may be at most ${SIM_RULES.maxDivergenceBps} bps apart.`,
           ),
           line("muted", "Otherwise the market has no price, and nothing fills."),
         ],

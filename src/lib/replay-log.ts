@@ -2,8 +2,10 @@
 
 import type { Command, LogEntry } from "./replay";
 
+export type TamperId = "deposit" | "quote" | "agree" | "order";
+
 export interface Tamper {
-  id: string;
+  id: TamperId;
   label: string;
   seq: number;
   /** What changed, as `before → after`. */

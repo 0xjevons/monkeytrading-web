@@ -2,7 +2,7 @@
 
 import { mulberry32, pick, randInt } from "./prng";
 
-/** The engine's index rules: how old a quote may be, how far quotes may spread, and how many it needs. */
+/** The engine's index rules: how old a quote may be, how far apart quotes may be, and how many it needs. */
 export interface PriceRules {
   maxAgeMs: number;
   maxDivergenceBps: number;
@@ -78,7 +78,7 @@ export function median(mids: readonly number[]): number {
 /**
  * The index at `now`, as the engine's `compute_index` (`crates/core/src/price.rs`) computes it: the
  * median of quotes no older than `maxAgeMs`. With fewer fresh quotes than `minSources`, or fresh
- * quotes spread wider than `maxDivergenceBps` of the median, the market has no price.
+ * quotes further apart than `maxDivergenceBps` of the median, the market has no price.
  */
 export function computeIndex(quotes: Quotes, rules: PriceRules, now: number): IndexOutcome {
   const used = VENUES.filter((v) => quotes[v].ts <= now && now - quotes[v].ts <= rules.maxAgeMs);

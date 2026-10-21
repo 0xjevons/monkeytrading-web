@@ -6,7 +6,7 @@ import { useEffect, useId, useState } from "react";
 
 import { shortHex } from "@/lib/format";
 import { describeCommand, replay, type ReplayResult, type ReplayStep } from "@/lib/replay";
-import { DEMO_LOG, TAMPERS, tamperLog } from "@/lib/replay-log";
+import { DEMO_LOG, TAMPERS, tamperLog, type TamperId } from "@/lib/replay-log";
 
 import { useMotion } from "./motion";
 
@@ -18,7 +18,7 @@ const COLUMNS = "@[44rem]:grid-cols-[2rem_minmax(0,1fr)_minmax(0,14rem)_8.5rem_1
  * shows every step at once, and pausing mid-run shows the rest.
  */
 export function ReplayDemo() {
-  const [tamperId, setTamperId] = useState("none");
+  const [tamperId, setTamperId] = useState<TamperId | null>(null);
   const [run, setRun] = useState<{ result: ReplayResult; revealed: number } | null>(null);
   const [motion] = useMotion();
   const groupName = useId();
@@ -42,7 +42,7 @@ export function ReplayDemo() {
     setRun({ result, revealed: motion ? 0 : result.steps.length });
   };
 
-  const choose = (id: string) => {
+  const choose = (id: TamperId | null) => {
     setTamperId(id);
     setRun(null);
   };
@@ -55,15 +55,15 @@ export function ReplayDemo() {
             1 · Tamper with the log, or don&apos;t
           </legend>
           <div className="flex flex-wrap gap-2">
-            {[{ id: "none", label: "Leave it as published" }, ...TAMPERS].map((option) => (
+            {[{ id: null, label: "Leave it as published" }, ...TAMPERS].map((option) => (
               <label
-                key={option.id}
+                key={option.id ?? "none"}
                 className="cursor-pointer rounded border border-line-2 px-2.5 py-1.5 text-xs text-fg-2 transition-colors hover:border-edge hover:text-fg has-checked:border-glow/70 has-checked:bg-glow/10 has-checked:text-fg has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-glow"
               >
                 <input
                   type="radio"
                   name={groupName}
-                  value={option.id}
+                  value={option.id ?? "none"}
                   checked={tamperId === option.id}
                   onChange={() => choose(option.id)}
                   className="sr-only"

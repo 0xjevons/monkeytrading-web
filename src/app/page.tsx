@@ -56,7 +56,7 @@ export default function Home() {
           aside={
             <>
               <p>
-                Below is a short published log, with the state root published after each command. Your browser replays it
+                Here is a short published log, with the state root published after each command. Your browser replays it
                 from an empty state, recomputes each keccak-256 root, and compares.
               </p>
               <p>Then change one value and replay again. The first root that differs shows exactly where.</p>

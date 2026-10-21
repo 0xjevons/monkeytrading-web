@@ -91,15 +91,24 @@ describe("createTape", () => {
     expect(rejections).toBeGreaterThan(0);
   });
 
-  it("publishes the median of its quotes as the index, and no price exactly when they spread past the market's limit", () => {
+  it("credits deposits in USDC, outside any market", () => {
+    const deposits = commands(take(1871, 500)).filter((c) => c.type === "DEPOSIT");
+    expect(deposits.length).toBeGreaterThan(0);
+    for (const deposit of deposits) {
+      expect(deposit).toMatchObject({ market: null, price: null, refused: false, result: "credited" });
+      expect(deposit.detail).toMatch(/^0x[0-9a-f]{4} [\d,]+\.\d{2} USDC$/);
+    }
+  });
+
+  it("publishes the median of its quotes as the index, and no price exactly when they are further apart than the market allows", () => {
     const limits = new Map(TAPE_MARKETS.map((m) => [m.symbol, m.maxDivergenceBps]));
     const prices = commands(take(1871, 3_000)).filter((c) => c.type === "PRICES");
     let refused = 0;
     for (const command of prices) {
       const quotes = quotesOf(command);
       const index = median(quotes);
-      const spread = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);
-      const over = spread > (limits.get(command.market ?? "") ?? Number.NaN);
+      const apart = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);
+      const over = apart > (limits.get(command.market ?? "") ?? Number.NaN);
       expect(command.refused).toBe(over);
       expect(command.price).toBe(over ? null : index);
       if (over) refused += 1;

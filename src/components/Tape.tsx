@@ -49,7 +49,7 @@ export function Tape() {
       </p>
       <div
         aria-hidden="true"
-        className="fade-top relative h-[calc(var(--rows)*var(--row))] overflow-hidden [--row:3.25rem] [--rows:9] @[46rem]:[--row:2.25rem] @[46rem]:[--rows:13]"
+        className="relative h-[calc(var(--rows)*var(--row))] overflow-hidden [--row:3.25rem] [--rows:9] @[46rem]:[--row:2.25rem] @[46rem]:[--rows:13]"
       >
         <ol key={last ? `${last.kind}-${last.seq}` : "empty"} className={`absolute inset-x-0 bottom-0 ${shift}`}>
           {state.entries.map((entry, i) => (

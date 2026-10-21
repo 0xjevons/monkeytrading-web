@@ -21,8 +21,9 @@ npm run dev
 
 The development server listens on `http://localhost:3000`. To check a change the way CI does, run
 `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and
-`npm audit --audit-level=high`, and, with Python 3, `python3 scripts/check-docs.py`; `npm start`
-then serves the production build.
+`npm audit --audit-level=high`; with Python 3, `python3 scripts/check-docs.test.py` and
+`python3 scripts/check-docs.py`; and, after changing a workflow, `actionlint`. `npm start` then
+serves the production build.
 
 ## Deployment
 

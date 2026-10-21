@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { RULES } from "./content";
 import { COMMANDS, MAX_INPUT, recall, runShell, type Line, type Recall } from "./shell";
 import { TELEGRAM_URL } from "./site";
 
@@ -81,5 +82,57 @@ describe("recall", () => {
   it("leaves the typed line alone on Down, and does nothing without history", () => {
     expect(recall(history, typing, "down")).toBeNull();
     expect(recall([], typing, "up")).toBeNull();
+  });
+});
+
+describe("runShell commands", () => {
+  const rules = RULES.map((r, i) => `${String(i + 1).padStart(2, "0")}  ${r.title}${r.building ? "  (in build)" : ""}`);
+
+  it.each([
+    ["index", "price"],
+    ["tape", "log"],
+    ["replay", "verify"],
+    ["join", "waitlist", "telegram"],
+    ["code", "github", "source"],
+    ["contact", "email"],
+    ["clear", "cls"],
+    ["banana", "bananas"],
+    ["exit", "logout"],
+    ["help", "?", "man"],
+  ])("answers %s and its aliases the same way", (...names) => {
+    const [first, ...aliases] = names;
+    for (const alias of aliases) expect(runShell(alias)).toEqual(runShell(first ?? ""));
+  });
+
+  it("marks every rule in build, and only those", () => {
+    expect(text(runShell("rules").lines)).toBe(rules.join("\n"));
+    expect(rules.filter((r) => r.endsWith("(in build)"))).toHaveLength(RULES.filter((r) => r.building).length);
+    expect(runShell("rules").lines.map((l) => l.tone)).toEqual(RULES.map((r) => (r.building ? "muted" : "fg")));
+  });
+
+  it.each([
+    [
+      "index",
+      "The index is the median of recent quotes from several independent venues.\n" +
+        "In the engine's local configuration for BTC-USD, quotes older than 1,000 ms are dropped, at least 2 must be " +
+        "fresh, and they may be at most 25 bps apart.\nOtherwise the market has no price, and nothing fills.",
+    ],
+    ["tape", "→ the public log"],
+    ["replay", "→ replay it yourself"],
+    ["code", "Apache-2.0, on GitHub: github.com/0xjevons/monkeytrading"],
+    ["contact", "Email: william.jevons@proton.me\nX: x.com/0xjevons"],
+    ["whoami", "guest. The house takes the other side; the ledger takes no sides."],
+    ["ls", "index/  tape/  replay/  rules/  status/"],
+    ["jevons", "“Value depends entirely upon utility.”\nW. S. Jevons, The Theory of Political Economy, 1871"],
+    [
+      "sunspots",
+      "Jevons once traced trade cycles to sunspots.\nThis index takes the median of venues instead. The sun is not a venue.",
+    ],
+    ["sudo rm -rf /", "sudo: the rules are public, not writable."],
+    ["rm log", "rm: the log is append-only."],
+    ["banana", "Collateral is USDC. Bananas remain unlisted."],
+    ["exit", "Positions close. The ledger stays."],
+  ])("answers %s", (input, expected) => {
+    expect(text(runShell(input).lines)).toBe(expected);
   });
 });

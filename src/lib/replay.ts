@@ -264,7 +264,7 @@ export function replay(log: readonly LogEntry[]): ReplayResult {
 export function describeCommand(command: Command): string {
   switch (command.type) {
     case "list_market":
-      return `list ${command.market}, max spread ${command.max_divergence_bps} bps, min ${command.min_sources} quotes`;
+      return `list ${command.market}, quotes at most ${command.max_divergence_bps} bps apart, min ${command.min_sources}`;
     case "deposit":
       return `deposit ${formatCents(command.amount)} USDC to ${command.account}`;
     case "prices":

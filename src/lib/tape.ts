@@ -17,7 +17,7 @@ export interface TapeMarket {
   /** Price decimals and starting mid, in `10^-priceDp` units. */
   priceDp: number;
   mid: number;
-  /** The widest spread of quotes, in bps of their median, that still gives a price. */
+  /** How far apart, in bps of their median, the quotes may be and still give a price. */
   maxDivergenceBps: number;
   /** Quantity decimals and the order-size range, in `10^-qtyDp` units. */
   qtyDp: number;
@@ -61,7 +61,7 @@ type Unsequenced = Omit<TapeCommand, "kind" | "seq" | "root">;
 
 /**
  * The engine's local markets: the starting mids are its `config/dev.toml` `mock_mids`, and each
- * spread limit is that market's `price_rules.max_divergence_bps`.
+ * divergence limit is that market's `price_rules.max_divergence_bps`.
  */
 export const TAPE_MARKETS: readonly TapeMarket[] = [
   { symbol: "BTC-USD", priceDp: 2, mid: 10_000_000, maxDivergenceBps: 25, qtyDp: 3, qty: [10, 500] },
@@ -114,8 +114,8 @@ export function createTape(seed: number, firstSeq = 1) {
     walk[i] = mid;
     const divergent = rand() < 0.06;
     const quotes = [0, 1, 2].map((v) => {
-      const spreadBps = divergent && v === 2 ? randInt(rand, 30, 55) : (rand() - 0.5) * 4;
-      return Math.trunc(mid * (1 + spreadBps / 10_000));
+      const offsetBps = divergent && v === 2 ? randInt(rand, 30, 55) : (rand() - 0.5) * 4;
+      return Math.trunc(mid * (1 + offsetBps / 10_000));
     });
     const index = median(quotes);
     const apart = bpsOf(Math.max(...quotes) - Math.min(...quotes), index);

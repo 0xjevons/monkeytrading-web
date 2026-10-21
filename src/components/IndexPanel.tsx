@@ -151,7 +151,7 @@ export function IndexPanel() {
             <span className={broken ? "text-alarm" : "text-fg-2"}>
               {index.status === "stale"
                 ? `${index.used.length} of ${index.needed} quotes fresh`
-                : `spread ${index.divergenceBps} bps · limit ${SIM_RULES.maxDivergenceBps}`}
+                : `${index.divergenceBps} bps apart · limit ${SIM_RULES.maxDivergenceBps}`}
             </span>
           </div>
         </div>
@@ -177,7 +177,7 @@ export function IndexPanel() {
 
       <div className="border-t border-line px-4 py-3 text-caption leading-relaxed text-fg-3 @[30rem]:px-5">
         Simulated quotes, seed {SEED}. Rules: quotes at most {groupThousands(SIM_RULES.maxAgeMs)} ms old, at least{" "}
-        {SIM_RULES.minSources} venues, spread at most {SIM_RULES.maxDivergenceBps} bps.
+        {SIM_RULES.minSources} venues, at most {SIM_RULES.maxDivergenceBps} bps apart.
       </div>
     </div>
   );

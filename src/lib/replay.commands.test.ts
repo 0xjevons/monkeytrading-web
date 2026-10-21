@@ -58,7 +58,7 @@ describe("applyCommand", () => {
     expect(sold.state.accounts["0xa"]?.positions).toEqual({});
   });
 
-  it("has a price at the spread limit, and none past it, where orders are rejected", () => {
+  it("has a price at the divergence limit, and none past it, where orders are rejected", () => {
     const apart = accept(funded, 3, {
       type: "prices",
       market: "BTC-USD",
@@ -85,6 +85,22 @@ describe("applyCommand", () => {
     expect(order.state.accounts["0xa"]?.positions).toEqual({});
   });
 
+  it("has no price with fewer quotes than the market's minimum", () => {
+    const strict = accept(emptyState(), 1, {
+      type: "list_market",
+      market: "BTC-USD",
+      max_divergence_bps: 25,
+      min_sources: 4,
+    });
+    const prices = accept(strict.state, 2, {
+      type: "prices",
+      market: "BTC-USD",
+      quotes: { coinbase: 10_000_000, kraken: 10_000_000, bitstamp: 10_000_000 },
+    });
+    expect(prices.event).toBe("no price: 3 of 4 quotes");
+    expect(prices.state.markets["BTC-USD"]?.index).toBeNull();
+  });
+
   it("does not modify the state it is given", () => {
     const before = canonicalJson(priced);
     accept(priced, 4, { type: "deposit", account: "0xa", amount: 5 });
@@ -93,6 +109,18 @@ describe("applyCommand", () => {
 
   it("refuses invalid commands with the reason, and changes nothing", () => {
     const cases: [DemoState, number, Command, string][] = [
+      [
+        listed,
+        2,
+        { type: "list_market", market: "ETH-USD", max_divergence_bps: 25, min_sources: 0 },
+        "min_sources must be a positive integer",
+      ],
+      [
+        listed,
+        2,
+        { type: "list_market", market: "ETH-USD", max_divergence_bps: 1.5, min_sources: 2 },
+        "max_divergence_bps must be a positive integer",
+      ],
       [listed, 2, { type: "deposit", account: "0xa", amount: 0 }, "amount must be a positive integer"],
       [listed, 2, { type: "deposit", account: "0xa", amount: 1.5 }, "amount must be a positive integer"],
       [listed, 3, { type: "deposit", account: "0xa", amount: 5 }, "seq 3 out of sequence: expected 2"],
@@ -179,7 +207,7 @@ describe("describeCommand", () => {
   it("renders each kind of command on one line", () => {
     expect(
       describeCommand({ type: "list_market", market: "BTC-USD", max_divergence_bps: 25, min_sources: 2 }),
-    ).toBe("list BTC-USD, max spread 25 bps, min 2 quotes");
+    ).toBe("list BTC-USD, quotes at most 25 bps apart, min 2");
     expect(describeCommand({ type: "deposit", account: "0x00a1", amount: 5_000_000 })).toBe(
       "deposit 50,000.00 USDC to 0x00a1",
     );

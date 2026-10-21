@@ -123,7 +123,7 @@ body {
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
 }
 
-/* CRT scanlines over a panel. */
+/* CRT scanlines across a panel's background, beneath its text so they never lower its contrast. */
 .scanlines {
   position: relative;
   isolation: isolate;
@@ -139,7 +139,7 @@ body {
     color-mix(in oklab, var(--color-ink) 18%, transparent) 2px 3px
   );
   border-radius: inherit;
-  z-index: 1;
+  z-index: -1;
 }
 
 /* A terminal window: hairline frame, dark glass, soft green bloom. */
@@ -151,11 +151,6 @@ body {
     0 0 0 1px color-mix(in oklab, var(--color-ink) 60%, transparent),
     0 1.5rem 4rem -1.5rem color-mix(in oklab, var(--color-ink) 90%, transparent),
     0 0 6rem -2rem color-mix(in oklab, var(--color-glow) 14%, transparent);
-}
-
-/* Fades the oldest rows of a scrolling log into the panel. */
-.fade-top {
-  mask-image: linear-gradient(to bottom, transparent, black 3.5rem);
 }
 
 @media (prefers-reduced-motion: reduce) {
