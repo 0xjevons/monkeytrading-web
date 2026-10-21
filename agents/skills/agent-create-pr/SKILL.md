@@ -56,7 +56,7 @@ marked ready, may not.
   mode at level `medium` or higher on the final diff, so Claude and Codex reviewers cross-validated
   each other. Fix every accepted Critical, High, and Medium finding by class and run it again;
   [The review loop](../agent-code-review/SKILL.md#the-review-loop) says when the rounds end — a
-  clean round, or the owner's consent to downgrade Mediums from round 5 on — and on which commit
+  clean round, or the owner's consent to downgrade Mediums from round 3 on — and on which commit
   the PR is marked ready. Low and Nit findings remain unfixed after the last round, and a
   mechanical rebase onto `main` after it needs no new round.
 - **Local checks** the change affects passed, per git-workflow; the full CI runs on the PR.
