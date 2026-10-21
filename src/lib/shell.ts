@@ -37,7 +37,7 @@ export const COMMANDS: readonly [string, string][] = [
   ["tape", "go to the public log"],
   ["replay", "go to the replay demo"],
   ["status", "what runs today"],
-  ["join", "the waitlist"],
+  ["join", "announcements and the waitlist"],
   ["code", "the source"],
   ["contact", "email and X"],
   ["clear", "clear the screen"],
@@ -96,7 +96,7 @@ export function runShell(input: string): ShellResult {
     case "join":
     case "waitlist":
     case "telegram":
-      return { lines: [line("fg", "Join the waitlist on Telegram: ", link(TELEGRAM_URL))] };
+      return { lines: [line("fg", "Join the announcement and waitlist channel on Telegram: ", link(TELEGRAM_URL))] };
     case "code":
     case "github":
     case "source":

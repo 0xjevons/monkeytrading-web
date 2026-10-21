@@ -16,10 +16,12 @@ describe("runShell", () => {
     for (const [name] of COMMANDS) expect(out).toContain(name);
   });
 
-  it("links the waitlist from join", () => {
+  it("links the announcement and waitlist channel from join", () => {
     const links = runShell("join").lines.flatMap((l) => l.parts).filter((p) => typeof p !== "string");
     expect(links).toEqual([{ href: TELEGRAM_URL, label: TELEGRAM_URL.replace("https://", "") }]);
-    expect(text(runShell("join").lines)).toBe(`Join the waitlist on Telegram: ${TELEGRAM_URL.replace("https://", "")}`);
+    expect(text(runShell("join").lines)).toBe(
+      `Join the announcement and waitlist channel on Telegram: ${TELEGRAM_URL.replace("https://", "")}`,
+    );
   });
 
   it("moves to a section, and clears, on request", () => {
