@@ -1,7 +1,7 @@
 /** The root layout: fonts, metadata, and the viewport. */
 
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteUrl } from "@/lib/site";
@@ -12,16 +12,6 @@ const mono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
-});
-
-// Used once, for the quotation in the footer; not worth preloading.
-const serif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: "italic",
-  display: "swap",
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -53,7 +43,7 @@ export const viewport: Viewport = {
 /** The document shell around every page. */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${mono.variable} ${serif.variable}`}>
+    <html lang="en" className={mono.variable}>
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
