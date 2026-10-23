@@ -62,7 +62,7 @@ export function PlatformPreview() {
               <input id={`${id}-leverage`} type="range" min={1} max={50} value={leverage} onChange={(event) => setLeverage(Number(event.target.value))} className="mt-3 w-full accent-glow" />
             </div>
             <dl className="mt-5 space-y-3 border-y border-line py-4 text-caption">
-              <div className="flex justify-between gap-2"><dt className="text-fg-3">Required margin</dt><dd>${formatCents(marginCents)}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-fg-3">Required margin</dt><dd><output htmlFor={`${id}-size ${id}-leverage`} aria-live="polite" aria-atomic="true"><span className="sr-only">Required margin: </span>${formatCents(marginCents)}</output></dd></div>
               <div className="flex justify-between gap-2"><dt className="text-fg-3">Counterparty</dt><dd>Protocol house</dd></div>
             </dl>
             <div className="mt-4 flex items-center justify-between text-label"><span className="text-fg-3">House capacity</span><span className="text-glow">Risk checked</span></div>
