@@ -8,31 +8,31 @@ export function Ownership() {
     <section id="ownership" aria-labelledby="ownership-title" tabIndex={-1} className="border-t border-line bg-ink-1 focus:outline-none">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-8 lg:px-12 lg:py-24">
         <div className="grid gap-7 lg:grid-cols-2 lg:gap-16">
-          <div><p className="text-caption tracking-label text-glow uppercase">Trader ownership · Planned model</p><h2 id="ownership-title" className="mt-4 font-sans text-4xl leading-tight font-medium tracking-tight sm:text-5xl">Own a share of the house<br />you trade against.</h2></div>
-          <p className="max-w-xl self-end text-sm leading-7 text-fg-2">MONKEY is intended to represent ownership of the house. Each ten-minute epoch has a fixed allocation, shared in proportion to eligible realised losses. Larger losses change your share of that budget; they do not expand the budget itself.</p>
+          <div><p className="text-caption tracking-label text-glow uppercase">MONKEY · Planned distribution</p><h2 id="ownership-title" className="mt-4 font-sans text-4xl leading-tight font-medium tracking-tight sm:text-5xl">Own a share of the house<br />you trade against.</h2></div>
+          <p className="max-w-xl self-end text-sm leading-7 text-fg-2">The plan is to distribute ownership of the house to traders through MONKEY. Every ten minutes, a fixed token budget is divided among accounts with eligible realised losses. Your share depends on your loss relative to everyone else’s in that period.</p>
         </div>
         <div className="mt-12 grid overflow-hidden rounded-xl border border-line-2 lg:grid-cols-[1.2fr_1fr]">
           <figure className="min-w-0 p-5 sm:p-8">
-            <figcaption><h3 className="text-sm font-medium">The schedule halves every six months</h3><p className="mt-2 text-caption leading-6 text-fg-3">Cumulative scheduled allocation / original maximum</p></figcaption>
+            <figcaption><h3 className="text-sm font-medium">The schedule halves every six months</h3><p className="mt-2 text-caption leading-6 text-fg-3">Share of the original maximum scheduled supply</p></figcaption>
             <ScheduleChart />
-            <p className="mt-4 text-caption leading-6 text-fg-2">50% at six months, 75% at twelve, 87.5% at eighteen and 93.75% at twenty-four. Actual minted supply can be lower because unused epoch budgets disappear permanently.</p>
-            <p className="mt-3 text-label leading-5 text-fg-3">Normalized model with equal-length half-years. Absolute supply, calendar boundaries, eligibility and integer remainder rules are not finalized.</p>
+            <p className="mt-4 text-caption leading-6 text-fg-2">The schedule allocates up to 50% in six months and 75% in a year. Periods with no eligible losses issue nothing, and their unused tokens are cancelled permanently.</p>
+            <p className="mt-3 text-label leading-5 text-fg-3">The chart assumes equal-length half-years. Total supply, exact dates, eligibility and rounding rules remain to be set.</p>
           </figure>
           <div className="border-t border-line-2 bg-ink p-5 sm:p-8 lg:border-t-0 lg:border-l">
-            <h3 className="text-sm font-medium">Inside one ten-minute epoch</h3>
-            <p className="mt-3 text-caption leading-6 text-fg-2">Two eligible accounts realise losses of $100 and $300. They divide the same scheduled allocation 25% / 75%.</p>
+            <h3 className="text-sm font-medium">How one ten-minute budget is shared</h3>
+            <p className="mt-3 text-caption leading-6 text-fg-2">If two eligible accounts lose $100 and $300 in one period, they receive 25% and 75% of that period’s tokens.</p>
             <div className="mt-7 flex h-12 overflow-hidden rounded text-caption font-medium text-ink"><span className="flex w-1/4 items-center justify-center bg-glow">25%</span><span className="flex w-3/4 items-center justify-center border-l-2 border-ink bg-fg-2">75%</span></div>
             <div className="mt-3 flex justify-between text-label text-fg-2"><span>A · $100 loss</span><span>B · $300 loss</span></div>
-            <p className="mt-5 text-caption leading-6 text-fg-3">At $1,000 and $3,000, their shares stay the same. There is no fixed number of MONKEY per dollar lost.</p>
-            <div className="mt-7 border-t border-line-2 pt-5"><div className="flex flex-wrap justify-between gap-2 text-caption"><span>No eligible losses?</span><span className="text-amber">Entire budget cancelled</span></div><div aria-hidden="true" className="mt-3 h-2 rounded bg-line-2" /><p className="mt-3 text-label leading-5 text-fg-3">Never banked, carried forward or claimed later.</p></div>
+            <p className="mt-5 text-caption leading-6 text-fg-3">If they instead lose $1,000 and $3,000, they receive the same shares of the same budget. Losing more does not create more tokens.</p>
+            <div className="mt-7 border-t border-line-2 pt-5"><div className="flex flex-wrap justify-between gap-2 text-caption"><span>No eligible losses?</span><span className="text-amber">Entire budget cancelled</span></div><div aria-hidden="true" className="mt-3 h-2 rounded bg-line-2" /><p className="mt-3 text-label leading-5 text-fg-3">Cancelled tokens cannot be issued in a later period.</p></div>
           </div>
         </div>
         <ol aria-label="From trading participation to operator governance" className="mt-10 grid gap-5 border-y border-line-2 py-7 sm:grid-cols-2 lg:grid-cols-4">
           {["Eligible realised losses", "MONKEY ownership", "Stake or delegate", "Operator governance"].map((step, index) => <li key={step} className="flex items-center gap-3 text-caption"><span className="text-glow">{String(index + 1).padStart(2, "0")}</span>{step}{index < 3 && <span aria-hidden="true" className="ml-auto text-fg-3">→</span>}</li>)}
         </ol>
         <div className="mt-7 grid gap-7 lg:grid-cols-2 lg:gap-16">
-          <p className="text-caption leading-6 text-fg-2">Staking is intended to connect economic participation in house value above a reserve floor with a role in choosing operators. Distribution terms remain to be specified; ownership does not guarantee yield. Papertrade originated the trader-owned-house mechanism that inspired this design.</p>
-          <details className="self-start rounded border border-line-2 px-5 py-4 text-caption text-fg-2"><summary className="cursor-pointer leading-6 text-fg">Genesis participation and the emissions clock</summary><div className="mt-4 space-y-3 leading-6"><p>The proposed permissioned mainnet test starts real emissions at genesis. The clock continues through public opening without a reset, so restricted early access creates an allocation advantage.</p><p>The founder’s provisional objective is to acquire 2–5% of the original maximum scheduled supply through participation, not a reserved allocation. Access criteria, insider participation and distributions must be disclosed before genesis.</p></div></details>
+          <p className="text-caption leading-6 text-fg-2">MONKEY holders would stake or delegate to choose operators. The proposed staking model also gives holders a share of house value above a required reserve; the distribution rules are still being specified. Papertrade introduced the mechanism of distributing house ownership through trader losses that inspired this design.</p>
+          <details className="self-start rounded border border-line-2 px-5 py-4 text-caption text-fg-2"><summary className="cursor-pointer leading-6 text-fg">Who gets access at genesis?</summary><div className="mt-4 space-y-3 leading-6"><p>The proposed first phase is a restricted mainnet test with real funds and real MONKEY issuance. The emissions clock starts then and does not restart when public trading opens. Early access therefore gives participants an allocation advantage.</p><p>The founder aims to acquire 2–5% of the original maximum scheduled supply by participating, with no reserved allocation. Tester access, founder participation and distribution reporting must be published before genesis.</p></div></details>
         </div>
       </div>
     </section>
