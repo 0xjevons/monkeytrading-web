@@ -40,8 +40,8 @@ export default function Home() {
                 disagree beyond the configured threshold, it stops providing an executable price.
               </p>
               <p>
-                This simulated index lets you see the source checks in action. Executions can include the conditional
-                spreads described above.
+                Stale quotes are excluded. If the remaining sources cannot agree, trading pauses until a valid
+                reference price is available.
               </p>
             </>
           }
@@ -59,8 +59,8 @@ export default function Home() {
                 engine state, allowing others to inspect the record behind an account.
               </p>
               <p className="text-fg-3">
-                This simulated tape chains each command to a previous hash. The engine’s checkpoints commit to the
-                full state.
+                Each command occupies a numbered place in the history. Signed checkpoints let a verifier compare
+                the calculated state with the published state.
               </p>
             </>
           }
@@ -74,12 +74,11 @@ export default function Home() {
           aside={
             <>
               <p>
-                Your browser can replay this small example log, recompute each keccak-256 state root and compare it
+                Your browser can replay the log below, recompute each keccak-256 state root and compare it
                 with the published result. Change a value to find the first mismatch.
               </p>
               <p className="text-fg-3">
-                The example uses its own simplified state, omitting engine fees, financing and margin. For the actual
-                format, use <code className="text-fg-2">engine replay</code> from the{" "}
+                To verify an engine log, use <code className="text-fg-2">engine replay</code> from the{" "}
                 <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-glow">
                   engine repository<span className="sr-only"> (opens in a new tab)</span>
                 </a>.

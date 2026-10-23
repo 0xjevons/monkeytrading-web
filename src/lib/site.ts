@@ -10,7 +10,7 @@ export const EMAIL = "william.jevons@proton.me";
 export const SITE_NAME = "Monkey Trading";
 export const SITE_TITLE = "Monkey Trading — a global DEX for institutional size";
 export const SITE_DESCRIPTION =
-  "A derivatives exchange being built for large positions across crypto, FX, indices, commodities and shares. " +
+  "A derivatives exchange for large positions across crypto, FX, indices, commodities and shares. " +
   "Read how pricing, margin, MONKEY distribution and operator handover work.";
 
 /**

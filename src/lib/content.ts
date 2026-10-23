@@ -7,7 +7,6 @@ export interface Rule {
   title: string;
   detail: string;
   example: string;
-  planned?: boolean;
 }
 
 // Trading mechanics follow the engine README; token and settlement policy follow the Content Studio.
@@ -19,9 +18,9 @@ export const RULES: readonly Rule[] = [
   { kind: "financing", title: "Overnight positions accrue financing", detail: "Holding a position through daily rollover can incur a financing charge or credit. The amount uses a benchmark rate and markup, with the calculation depending on the market and whether you are long or short.", example: "Open position → daily rollover → financing" },
   { kind: "loss", title: "Losses stop at your account balance", detail: "Your positions share the margin in your account. The engine closes positions when equity falls below the close-out threshold. If a gap creates a loss beyond the account balance, the house absorbs the excess.", example: "Account balance is at risk; no debt beyond it" },
   { kind: "sessions", title: "Trading follows each market’s hours", detail: "Markets follow their trading sessions, holidays and early closes. A resting order can fill at the next eligible price after reopening, which may be far from the previous close.", example: "Friday close → market gap → next opening price" },
-  { kind: "capacity", title: "House exposure limits new positions", detail: "The engine limits the house’s net exposure in each market and across the account book. It refuses new risk that would exceed those limits, even when your account has enough margin.", example: "Existing exposure + your order ≤ applicable cap" },
-  { kind: "custody", title: "Withdrawals wait for daily settlement", detail: "The planned custody system holds USDC in an onchain vault. Withdrawal requests wait for the daily state check before funds can be released.", example: "Intraday requests → daily verification → eligible release", planned: true },
-  { kind: "ownership", title: "Trader losses share the MONKEY budget", detail: "Under the proposed distribution, accounts with eligible realised losses share a fixed MONKEY budget every ten minutes. Holders would stake or delegate their tokens to choose operators.", example: "Eligible losses → MONKEY → stake or delegate", planned: true },
+  { kind: "capacity", title: "House exposure limits new positions", detail: "The engine limits the house’s net exposure in each market and across the account book. It refuses new risk that exceeds those limits, even when your account has enough margin.", example: "Existing exposure + your order ≤ applicable cap" },
+  { kind: "custody", title: "Withdrawals wait for daily settlement", detail: "The custody system holds USDC in an onchain vault. Withdrawal requests wait for the daily state check before funds can be released.", example: "Intraday requests → daily verification → eligible release" },
+  { kind: "ownership", title: "Trader losses share the MONKEY budget", detail: "Accounts with eligible realised losses share a fixed MONKEY budget every ten minutes. Holders stake or delegate their tokens to choose operators.", example: "Eligible losses → MONKEY → stake or delegate" },
   { kind: "accounting", title: "You can replay the account history", detail: "The engine publishes its ordered commands and signed state checkpoints. You can replay the commands and compare the calculated balances with those checkpoints. An account proof checks that your balance is included in a published state.", example: "Commands → replay → compare state roots" },
 ];
 

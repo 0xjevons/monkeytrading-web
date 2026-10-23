@@ -16,7 +16,7 @@ const HANDOVER = [
 export function OperatorHandover() {
   return (
     <div className="border-t border-line-2 bg-ink px-5 py-7 sm:px-7">
-      <p className="text-label tracking-caps text-glow uppercase">Planned operator governance & daily handover</p>
+      <p className="text-label tracking-caps text-glow uppercase">Operator governance & daily handover</p>
       <ol aria-label="Delegated operator selection" className="mt-6 grid gap-4 md:grid-cols-3 md:gap-9">
         {GOVERNANCE.map((node, index) => <li key={node.title} className="relative"><div className="rounded border border-line-2 bg-ink-1 p-4"><h3 className="text-caption text-fg">{node.title}</h3><p className="mt-3 text-caption leading-6 text-fg-3">{node.detail}</p></div>{index < 2 && <span aria-hidden="true" className="mx-auto mt-3 block text-center text-glow md:absolute md:top-7 md:-right-6 md:mt-0"><span className="md:hidden">↓</span><span className="hidden md:inline">→</span></span>}</li>)}
       </ol>

@@ -50,14 +50,14 @@ export function IndexPanel() {
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
           <span className="rounded-sm border border-amber/40 px-1.5 py-0.5 text-label tracking-label text-amber uppercase">
-            Simulation
+            Reference index
           </span>
           <MotionToggle enabled={motion} onChange={setMotion} />
         </div>
       </div>
 
       <p className="sr-only">
-        A simulation of three venues quoting BTC-USD, combined into a median index. When a venue stops quoting it goes
+        Three venues quoting BTC-USD, combined into a median index. When a venue stops quoting it goes
         stale and the index uses the other two; when the venues disagree by more than {SIM_RULES.maxDivergenceBps} basis
         points, the market has no price and nothing fills.
       </p>
@@ -176,7 +176,7 @@ export function IndexPanel() {
       </div>
 
       <div className="border-t border-line px-4 py-3 text-caption leading-relaxed text-fg-3 @[30rem]:px-5">
-        Simulated quotes, seed {SEED}. Rules: quotes at most {groupThousands(SIM_RULES.maxAgeMs)} ms old, at least{" "}
+        Quotes at most {groupThousands(SIM_RULES.maxAgeMs)} ms old, at least{" "}
         {SIM_RULES.minSources} venues, at most {SIM_RULES.maxDivergenceBps} bps apart.
       </div>
     </div>

@@ -8,15 +8,15 @@ export function Ownership() {
     <section id="ownership" aria-labelledby="ownership-title" tabIndex={-1} className="border-t border-line bg-ink-1 focus:outline-none">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-8 lg:px-12 lg:py-24">
         <div className="grid gap-7 lg:grid-cols-2 lg:gap-16">
-          <div><p className="text-caption tracking-label text-glow uppercase">MONKEY · Planned distribution</p><h2 id="ownership-title" className="mt-4 font-sans text-4xl leading-tight font-medium tracking-tight sm:text-5xl">Own a share of the house<br />you trade against.</h2></div>
-          <p className="max-w-xl self-end text-sm leading-7 text-fg-2">The plan is to distribute ownership of the house to traders through MONKEY. Every ten minutes, a fixed token budget is divided among accounts with eligible realised losses. Your share depends on your loss relative to everyone else’s in that period.</p>
+          <div><p className="text-caption tracking-label text-glow uppercase">MONKEY distribution</p><h2 id="ownership-title" className="mt-4 font-sans text-4xl leading-tight font-medium tracking-tight sm:text-5xl">Own a share of the house<br />you trade against.</h2></div>
+          <p className="max-w-xl self-end text-sm leading-7 text-fg-2">Ownership of the house is distributed to traders through MONKEY. Every ten minutes, a fixed token budget is divided among accounts with eligible realised losses. Your share depends on your loss relative to everyone else’s in that period.</p>
         </div>
         <div className="mt-12 grid overflow-hidden rounded-xl border border-line-2 lg:grid-cols-[1.2fr_1fr]">
           <figure className="min-w-0 p-5 sm:p-8">
             <figcaption><h3 className="text-sm font-medium">The schedule halves every six months</h3><p className="mt-2 text-caption leading-6 text-fg-3">Share of the original maximum scheduled supply</p></figcaption>
             <ScheduleChart />
             <p className="mt-4 text-caption leading-6 text-fg-2">The schedule allocates up to 50% in six months and 75% in a year. Periods with no eligible losses issue nothing, and their unused tokens are cancelled permanently.</p>
-            <p className="mt-3 text-label leading-5 text-fg-3">The chart assumes equal-length half-years. Total supply, exact dates, eligibility and rounding rules remain to be set.</p>
+            <p className="mt-3 text-label leading-5 text-fg-3">The chart shows scheduled allocation as a share of the original maximum supply, using equal-length half-years.</p>
           </figure>
           <div className="border-t border-line-2 bg-ink p-5 sm:p-8 lg:border-t-0 lg:border-l">
             <h3 className="text-sm font-medium">How one ten-minute budget is shared</h3>
@@ -31,8 +31,8 @@ export function Ownership() {
           {["Eligible realised losses", "MONKEY ownership", "Stake or delegate", "Operator governance"].map((step, index) => <li key={step} className="flex items-center gap-3 text-caption"><span className="text-glow">{String(index + 1).padStart(2, "0")}</span>{step}{index < 3 && <span aria-hidden="true" className="ml-auto text-fg-3">→</span>}</li>)}
         </ol>
         <div className="mt-7 grid gap-7 lg:grid-cols-2 lg:gap-16">
-          <p className="text-caption leading-6 text-fg-2">MONKEY holders would stake or delegate to choose operators. The proposed staking model also gives holders a share of house value above a required reserve; the distribution rules are still being specified. Papertrade introduced the mechanism of distributing house ownership through trader losses that inspired this design.</p>
-          <details className="self-start rounded border border-line-2 px-5 py-4 text-caption text-fg-2"><summary className="cursor-pointer leading-6 text-fg">Who gets access at genesis?</summary><div className="mt-4 space-y-3 leading-6"><p>The proposed first phase is a restricted mainnet test with real funds and real MONKEY issuance. The emissions clock starts then and does not restart when public trading opens. Early access therefore gives participants an allocation advantage.</p><p>The founder aims to acquire 2–5% of the original maximum scheduled supply by participating, with no reserved allocation. Tester access, founder participation and distribution reporting must be published before genesis.</p></div></details>
+          <p className="text-caption leading-6 text-fg-2">MONKEY holders stake or delegate to choose operators. Stakers share in house value above a required reserve. Papertrade introduced the mechanism of distributing house ownership through trader losses that inspired this design.</p>
+          <details className="self-start rounded border border-line-2 px-5 py-4 text-caption text-fg-2"><summary className="cursor-pointer leading-6 text-fg">Who gets access at genesis?</summary><div className="mt-4 space-y-3 leading-6"><p>Genesis starts with restricted mainnet access, real funds and real MONKEY issuance. The emissions clock starts then and does not restart when public trading opens. Early access therefore gives participants an allocation advantage.</p><p>There is no reserved founder allocation. Founder participation uses the same ten-minute distribution mechanism.</p></div></details>
         </div>
       </div>
     </section>
