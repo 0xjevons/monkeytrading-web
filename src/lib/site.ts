@@ -1,17 +1,17 @@
 /** Links, contact, and identity for the site, and the canonical origin from the build environment. */
 
-/** The Telegram announcement and waitlist channel: every "join" link on the site points here. */
-export const TELEGRAM_URL = "https://t.me/monkeytrading_ann";
+/** The Telegram community: every "join" link on the site points here. */
+export const TELEGRAM_URL = "https://t.me/monkeytrading0x";
 
 export const GITHUB_URL = "https://github.com/0xjevons/monkeytrading";
 export const X_URL = "https://x.com/0xjevons";
 export const EMAIL = "william.jevons@proton.me";
 
-export const SITE_NAME = "monkeytrading";
-export const SITE_TITLE = "monkeytrading — the house is open source, the ledger is public";
+export const SITE_NAME = "Monkey Trading";
+export const SITE_TITLE = "Monkey Trading — a global DEX for institutional size";
 export const SITE_DESCRIPTION =
-  "An open-source engine for trading CFDs against a house whose rules are public code. It runs in a " +
-  "confidential-computing enclave and publishes every command, so anyone can replay the record. Pre-launch.";
+  "A pre-launch multi-asset DEX designed for institutional size, high leverage and low-latency native execution. " +
+  "Explore the trading rules, trader ownership and attested operator architecture.";
 
 /**
  * The canonical origin for metadata, the sitemap, and robots: `SITE_URL` when set, else the Vercel

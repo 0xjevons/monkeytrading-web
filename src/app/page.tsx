@@ -1,48 +1,66 @@
-/** The site's one page: the hero, the tape, the replay demo, the rules, the status, and the shell. */
+/** Trader-first product page with engineering demonstrations below the trading rules. */
 
 import type { ReactNode } from "react";
 
+import { Architecture } from "@/components/Architecture";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { Hero } from "@/components/Hero";
 import { IndexPanel } from "@/components/IndexPanel";
+import { Markets } from "@/components/Markets";
+import { Ownership } from "@/components/Ownership";
 import { ReplayDemo } from "@/components/ReplayDemo";
+import { Roadmap } from "@/components/Roadmap";
 import { Rules } from "@/components/Rules";
-import { Status } from "@/components/Status";
 import { Tape } from "@/components/Tape";
-import { Terminal } from "@/components/Terminal";
-import { ASSET_CLASSES } from "@/lib/content";
-import { GITHUB_URL, TELEGRAM_URL } from "@/lib/site";
+import { GITHUB_URL } from "@/lib/site";
 
-/** The page, framed by the skip link, the header, `main`, and the footer. */
+/** The static page shell and ordered product explanation. */
 export default function Home() {
   return (
     <>
-      <a
-        href="#main"
-        className="sr-only z-50 rounded bg-glow px-3 py-2 text-sm text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-      >
+      <a href="#main" className="sr-only z-50 rounded bg-glow px-3 py-2 text-sm text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
         Skip to content
       </a>
       <Header />
       <main id="main" tabIndex={-1} className="focus:outline-none">
         <Hero />
+        <Markets />
+        <Rules />
+        <Ownership />
+        <Architecture />
         <Section
-          id="tape"
-          label="The tape"
-          title="Every command, in order, in public."
+          id="index"
+          label="Reference pricing"
+          title="A price has to earn its place."
           aside={
             <>
               <p>
-                The engine sequences every price update, order, and deposit into a single log, and streams it as it goes.
-                At each checkpoint the enclave signs a hash of the whole state.
+                The engine combines fresh independent quotes into a median reference. If sources become stale or
+                disagree beyond the configured threshold, it stops providing an executable price.
               </p>
               <p>
-                The engine is deterministic. Given the same log, the same code reaches the same state on any machine, to
-                the last unit.
+                This simulated index lets you see the source checks in action. Executions can include the conditional
+                spreads described above.
+              </p>
+            </>
+          }
+        >
+          <IndexPanel />
+        </Section>
+        <Section
+          id="tape"
+          label="Public accounting"
+          title="The history behind the balance."
+          aside={
+            <>
+              <p>
+                The node publishes ordered commands and the events they produce. Signed checkpoints commit to the
+                engine state, allowing others to inspect the record behind an account.
               </p>
               <p className="text-fg-3">
-                Simulated tape. Each root here chains the previous root with the command; the engine hashes its entire
-                state.
+                This simulated tape chains each command to a previous hash. The engine’s checkpoints commit to the
+                full state.
               </p>
             </>
           }
@@ -51,124 +69,35 @@ export default function Home() {
         </Section>
         <Section
           id="replay"
-          label="Replay it yourself"
-          title="Don’t trust the house. Replay it."
+          label="Independent verification"
+          title="Recalculate the result."
           aside={
             <>
               <p>
-                Here is a short published log, with the state root published after each command. Your browser replays it
-                from an empty state, recomputes each keccak-256 root, and compares.
+                Your browser can replay this small example log, recompute each keccak-256 state root and compare it
+                with the published result. Change a value to find the first mismatch.
               </p>
-              <p>Then change one value and replay again. The first root that differs shows exactly where.</p>
               <p className="text-fg-3">
-                An illustration of the principle, not the engine&apos;s format: its commands, state, and roots are this
-                demo&apos;s own, and it leaves out fees, financing, and margin. The real check is{" "}
-                <code className="text-fg-2">engine replay</code>, in the <ExternalLink href={GITHUB_URL}>repository</ExternalLink>.
+                The example uses its own simplified state, omitting engine fees, financing and margin. For the actual
+                format, use <code className="text-fg-2">engine replay</code> from the{" "}
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-glow">
+                  engine repository<span className="sr-only"> (opens in a new tab)</span>
+                </a>.
               </p>
             </>
           }
         >
           <ReplayDemo />
         </Section>
-        <Rules />
-        <Status />
-        <Section
-          id="shell"
-          label="Shell"
-          title="Prefer a prompt?"
-          aside={
-            <p>
-              Ask the house a question. Type <code className="text-glow">help</code> to start.
-            </p>
-          }
-        >
-          <Terminal />
-        </Section>
+        <Roadmap />
       </main>
       <Footer />
     </>
   );
 }
 
-/** The first screen: the headline, the calls to action, and the simulated index. */
-function Hero() {
-  return (
-    <section id="top" aria-labelledby="top-title" className="relative isolate overflow-hidden">
-      <div aria-hidden="true" className="backdrop-grid absolute inset-0 -z-10" />
-      <div
-        aria-hidden="true"
-        className="absolute top-[-20rem] left-1/2 -z-10 h-[40rem] w-[70rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glow)_14%,transparent),transparent)]"
-      />
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:px-8 lg:pt-20 lg:pb-24">
-        <div>
-          <p className="inline-flex items-center gap-2 rounded-full border border-line-2 bg-ink-1/80 px-3 py-1 text-caption tracking-caps text-fg-2 uppercase">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-amber" />
-            Pre-launch · contracts for difference
-          </p>
-          <h1
-            id="top-title"
-            className="mt-7 text-[2.125rem] leading-[1.05] font-semibold tracking-[-0.045em] sm:text-5xl lg:text-[2.125rem] xl:text-[2.75rem]"
-          >
-            The house is open{"\u00a0"}source.
-            <br />
-            <span className="glow">The ledger is public.</span>
-          </h1>
-          <p className="mt-7 max-w-xl text-lead leading-relaxed text-fg-2 sm:text-base">
-            monkeytrading is an engine for trading contracts for difference, where the house takes the other side of
-            every trade. Its rules are public code. It runs inside a confidential-computing enclave and publishes every
-            command it processes, so anyone can replay the record and check the state it signs.
-          </p>
-          <div className="mt-9 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
-            <a
-              href={TELEGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded bg-glow px-5 py-3 text-sm font-medium text-ink shadow-glow transition-colors hover:bg-glow-hover"
-            >
-              Join the waitlist on Telegram
-              <span aria-hidden="true">→</span>
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded border border-edge px-5 py-3 text-sm text-fg transition-colors hover:border-fg-2 hover:bg-ink-2"
-            >
-              Read the code
-              <span className="sr-only"> on GitHub (opens in a new tab)</span>
-            </a>
-          </div>
-          <p className="mt-5 text-xs text-fg-3">Nothing here holds real funds yet.</p>
-          <ul aria-label="Asset classes" className="mt-10 flex flex-wrap gap-2">
-            {ASSET_CLASSES.map((name) => (
-              <li key={name} className="rounded border border-line-2 px-2.5 py-1 text-caption text-fg-2">
-                {name}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div id="index" tabIndex={-1} className="focus:outline-none">
-          <h2 className="sr-only">The index</h2>
-          <IndexPanel />
-          <p className="mt-4 text-xs leading-relaxed text-fg-3">
-            Orders fill at the median of several venues. A venue that stops quoting drops out; venues that disagree mean no
-            price, so there is never a stale price to pick off.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** A page section: a label, heading, and prose beside its panel, stacked on narrow screens. */
-function Section({
-  id,
-  label,
-  title,
-  aside,
-  children,
-}: {
+/** A supporting engineering explanation alongside its interactive demonstration. */
+function Section({ id, label, title, aside, children }: {
   id: string;
   label: string;
   title: string;
@@ -177,31 +106,14 @@ function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} tabIndex={-1} className="border-t border-line focus:outline-none">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16 lg:px-8 lg:py-28">
-        <div className="lg:sticky lg:top-24 lg:self-start">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16 lg:px-12 lg:py-24">
+        <div>
           <p className="text-caption tracking-label text-glow uppercase">{label}</p>
-          <h2 id={`${id}-title`} className="mt-4 text-3xl leading-tight font-semibold tracking-tight text-balance sm:text-4xl">
-            {title}
-          </h2>
-          <div className="mt-6 space-y-4 text-sm leading-relaxed text-fg-2">{aside}</div>
+          <h2 id={`${id}-title`} className="mt-4 font-sans text-4xl leading-tight font-medium tracking-tight">{title}</h2>
+          <div className="mt-6 space-y-4 text-sm leading-7 text-fg-2">{aside}</div>
         </div>
         <div className="min-w-0">{children}</div>
       </div>
     </section>
-  );
-}
-
-/** An inline link to another site that opens in a new tab and says so to screen readers. */
-function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-fg-2 underline decoration-fg-3 underline-offset-4 hover:text-glow hover:decoration-glow"
-    >
-      {children}
-      <span className="sr-only"> (opens in a new tab)</span>
-    </a>
   );
 }

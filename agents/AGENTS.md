@@ -2,32 +2,35 @@
 
 ## Description
 
-The public website for monkeytrading, the open-source CFD engine in `0xjevons/monkeytrading`. One
-statically rendered Next.js page, deployed on Vercel: a simulated three-venue median index, a
-simulated public log, an in-browser replay demo that recomputes keccak-256 state roots, the house
-rules, the pre-launch status, a small shell, and a risk notice. It has no backend, analytics,
-cookies, or third-party scripts. This file is an index: load only the rule whose hint matches the
+The public website for Monkey Trading, the open-source CFD engine in `0xjevons/monkeytrading`. One
+statically rendered Next.js page: a simulated multi-asset trading workspace, illustrated trading
+rules, the planned MONKEY allocation model and operator architecture, a six-week target roadmap,
+and supporting index, log and replay demonstrations. It has no backend, analytics, cookies, or
+third-party scripts. This file is an index: load only the rule whose hint matches the
 current action.
 
 ## Structure
 
 - **src/app/** — the App Router. `layout.tsx` (fonts through `next/font`, the `metadata` and
   `viewport` exports), `page.tsx` (the page's sections), `globals.css` (Tailwind CSS 4 `@theme`
-  tokens, keyframes, and the reduced-motion rule), `robots.ts`, `sitemap.ts`, `icon.svg`,
+  tokens, keyframes, and the reduced-motion rule), `robots.ts`, `sitemap.ts`, `icon.png`,
   `apple-icon.png`, and the static `opengraph-image.png` and `twitter-image.png` (1200 × 630) with
   their `.alt.txt`.
-- **src/components/** — React components: the simulated panels `IndexPanel` (the median index),
-  `Tape` (the public log), `ReplayDemo`, and `Terminal` (the shell); the `Rules` and `Status`
-  sections; `Header`, `Footer`, and `Logo`; and `motion.tsx` (the one pause / play switch for every
-  animation, off under `prefers-reduced-motion`, and a ticker that stops off screen).
-- **src/lib/** — pure TypeScript with no React or DOM; modules with logic are unit-tested by a
-  `*.test.ts` beside them: `price-index.ts` (the engine's index rule and its seeded simulation),
-  `index-view.ts` (what the index panel draws: venue rows, the number line, the sparkline),
-  `replay.ts` and `replay-log.ts` (the demo's state machine, published log, and tampers),
-  `tape.ts`, `shell.ts`, `format.ts`, `prng.ts` (the seeded generator and the shared seed), and
-  `unreachable.ts` (the exhaustiveness check); `content.ts` (the engine's rules and status
-  as the page states them); and `site.ts` (links, contact, and `siteUrl()`, the one reader of the
-  site's environment variables).
+- **src/components/** — `Hero` and `PlatformPreview` introduce the simulated trading workspace;
+  `Markets`, `Rules` and `RuleVisual` explain market breadth and trading mechanics; `Ownership`
+  models the planned MONKEY schedule; `Architecture` and `OperatorHandover` illustrate intended
+  operator succession;
+  `Roadmap` renders dated delivery targets. `IndexPanel`, `Tape` and `ReplayDemo` are supporting
+  interactive demonstrations. `Header`, `Footer` and `Logo` frame the page. `motion.tsx` provides
+  the shared pause / play switch and ticker that stops off screen and in hidden tabs.
+- **src/lib/** — pure TypeScript with no React or DOM. Logic modules have adjacent `*.test.ts`:
+  `price-index.ts` and `index-view.ts` implement the seeded median-index illustration;
+  `replay.ts` and `replay-log.ts` hold the demo state machine, published log and tampers;
+  `platform.ts` holds illustrative workspace data and margin math; `emissions.ts` holds normalized
+  scheduled-allocation math; `tape.ts`, `format.ts`, `prng.ts` and `unreachable.ts` support the demos.
+  `content.ts` holds source-grounded trading rules, market categories and roadmap targets;
+  `site.ts` holds identity, links, contact and `siteUrl()`, the one environment-variable reader.
+- **public/** — the exact supplied `monkey-trading-logo.png`, served from the site's own origin.
 - **next.config.ts** — the security headers on every path (a CSP without nonces, nosniff, referrer,
   frame, opener, and permissions policies), `reactStrictMode`, `poweredByHeader: false`, and
   `agentRules: false`, so `next dev` leaves this index alone.
