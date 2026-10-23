@@ -1,1 +1,1 @@
-monkeytrading, pre-launch: the house is open source, the ledger is public. A simulated log of sequenced prices and orders.
+Monkey Trading: a global DEX for institutional size. Mint monkey logo and candlestick chart on charcoal.

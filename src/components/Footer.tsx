@@ -17,8 +17,8 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_auto] lg:px-8">
         <div className="max-w-xl">
           <p className="flex items-center gap-2.5 text-sm font-medium text-fg">
-            <LogoMark className="size-5" />
-            monkeytrading
+            <LogoMark className="size-10" />
+            Monkey Trading
           </p>
           <figure className="mt-6">
             <blockquote className="font-serif text-2xl text-fg italic">“Value depends entirely upon utility.”</blockquote>
@@ -52,9 +52,9 @@ export function Footer() {
         <div className="border-t border-line pt-8 lg:col-span-2">
           <h2 className="text-caption tracking-label text-fg-3 uppercase">Risk notice</h2>
           <p className="mt-3 max-w-4xl text-xs leading-relaxed text-fg-2">
-            CFDs are complex, leveraged products, and losses can be rapid. monkeytrading is pre-launch software: nothing
-            on this site is an offer of, or an invitation to buy, any product, service, or token, and nothing here holds
-            real funds. It is not available to persons in the United States or in sanctioned jurisdictions.
+            CFDs are complex, leveraged products, and losses can be rapid. Nothing on this site is an offer of, or an
+            invitation to buy, any product, service, or token. Monkey Trading is not available to persons in the
+            United States or in sanctioned jurisdictions.
           </p>
           <p className="mt-6 text-xs text-fg-3">The code is open source under the Apache License 2.0.</p>
         </div>

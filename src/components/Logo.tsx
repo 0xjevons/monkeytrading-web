@@ -1,13 +1,13 @@
-/** The site's mark. */
+/** The supplied Monkey Trading bitmap, framed without altering the source asset. */
 
-/** The mark: three venue quotes at different heights, and the median line through the middle one. */
-export function LogoMark({ className = "" }: { className?: string }) {
+import Image from "next/image";
+
+/** A decorative brand mark beside the visible Monkey Trading name. */
+export function LogoMark({ className = "size-11" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <line x1="2" y1="12" x2="22" y2="12" stroke="var(--color-glow)" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="5.5" cy="6" r="2.25" fill="var(--color-fg-2)" />
-      <circle cx="12" cy="18" r="2.25" fill="var(--color-fg-2)" />
-      <circle cx="18.5" cy="12" r="2.75" fill="var(--color-glow)" />
-    </svg>
+    <span aria-hidden="true" className={`relative inline-block shrink-0 overflow-hidden rounded-full ${className}`}>
+      <Image src="/monkey-trading-logo.png" alt="" width={780} height={624} unoptimized
+        className="absolute top-1/2 left-1/2 h-auto w-[215%] max-w-none -translate-x-1/2 -translate-y-1/2" />
+    </span>
   );
 }

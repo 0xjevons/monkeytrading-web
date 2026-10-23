@@ -38,13 +38,13 @@ export function Tape() {
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
           <span className="rounded-sm border border-amber/40 px-1.5 py-0.5 text-label tracking-label text-amber uppercase">
-            Simulation
+            Command history
           </span>
           <MotionToggle enabled={motion} onChange={setMotion} />
         </div>
       </div>
       <p className="sr-only">
-        A simulated public log: sequenced price updates, orders, and deposits, each with its running root, and a signed
+        A public log of sequenced price updates, orders, and deposits, each with its running root, and a signed
         checkpoint every twelve commands.
       </p>
       <div
